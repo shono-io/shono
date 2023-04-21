@@ -1,3 +1,3 @@
-package go_shono
+package events
 
 const KindHeader = "io.shono.kind"
