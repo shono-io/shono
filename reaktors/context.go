@@ -52,7 +52,7 @@ func (ctx *reaktorContext) Send(kind events.Kind, key string, value any) error {
 		Value: val,
 		Topic: kind.Domain,
 		Headers: []kgo.RecordHeader{
-			{Key: "shono.type", Value: []byte(kind.String())},
+			{Key: events.KindHeader, Value: []byte(kind.String())},
 		},
 	}
 

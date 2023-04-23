@@ -2,15 +2,16 @@ package events
 
 import (
 	"github.com/shono-io/go-shono/codec"
+	"reflect"
 )
 
 type EventSchema string
 
 type EventOpt func(*EventInfo)
 
-func WithValueType(v any) EventOpt {
+func WithValueType[T any](v T) EventOpt {
 	return func(e *EventInfo) {
-		e.valueType = v
+		e.valueType = new(T)
 	}
 }
 
@@ -18,7 +19,7 @@ func NewEventInfo(kind Kind, opts ...EventOpt) *EventInfo {
 	event := &EventInfo{
 		kind:      kind,
 		codec:     &codec.Json{},
-		valueType: map[string]any{},
+		valueType: reflect.TypeOf(map[string]any{}),
 	}
 
 	for _, opt := range opts {
@@ -48,4 +49,5 @@ func (e *EventInfo) Decode(b []byte, value any) error {
 
 func (e *EventInfo) NewInstance() any {
 	return e.valueType
+	//return reflect.New().Elem().Interface()
 }

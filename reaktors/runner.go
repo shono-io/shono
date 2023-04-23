@@ -77,6 +77,10 @@ func (r *Runner) handleRecord(ctx context.Context, record *kgo.Record) error {
 		return fmt.Errorf("unable to find reaktor for event kind %s: %w", kind, err)
 	}
 
+	if hndlr == nil {
+		return nil
+	}
+
 	rctx := &reaktorContext{
 		Context: context.Background(),
 		kc:      r.kafka,
@@ -88,6 +92,7 @@ func (r *Runner) handleRecord(ctx context.Context, record *kgo.Record) error {
 }
 
 func (r *Runner) Run(ctx context.Context) {
+	logrus.Info("reaktor runner started")
 	for {
 		fetches := r.kafka.PollFetches(ctx)
 		if fetches.IsClientClosed() {
