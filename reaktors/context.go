@@ -11,7 +11,8 @@ import (
 type ReaktorContext interface {
 	context.Context
 	Timestamp() time.Time
-	Send(kind events.Kind, key string, value any) error
+	Failed(kind events.Kind, err error)
+	Send(kind events.Kind, key string, value any)
 	Header(key string) []byte
 }
 
@@ -36,15 +37,19 @@ func (ctx *reaktorContext) Header(key string) []byte {
 	return nil
 }
 
-func (ctx *reaktorContext) Send(kind events.Kind, key string, value any) error {
+func (ctx *reaktorContext) Failed(kind events.Kind, err error) {
+	ctx.Send(kind, string(ctx.record.Key), events.OperationFailed{Reason: err.Error()})
+}
+
+func (ctx *reaktorContext) Send(kind events.Kind, key string, value any) {
 	ei, err := ctx.er.Event(ctx, kind)
 	if err != nil {
-		return fmt.Errorf("error getting event info: %v", err)
+		panic(fmt.Sprintf("error getting event info: %v", err))
 	}
 
 	val, err := ei.Encode(value)
 	if err != nil {
-		return fmt.Errorf("error marshaling value: %v", err)
+		panic(fmt.Sprintf("error marshaling value: %v", err))
 	}
 
 	record := &kgo.Record{
@@ -57,8 +62,6 @@ func (ctx *reaktorContext) Send(kind events.Kind, key string, value any) error {
 	}
 
 	if pr := ctx.kc.ProduceSync(ctx, record); pr.FirstErr() != nil {
-		return fmt.Errorf("error producing record: %v", pr.FirstErr())
+		panic(fmt.Sprintf("error producing record: %v", pr.FirstErr()))
 	}
-
-	return nil
 }

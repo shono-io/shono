@@ -88,7 +88,9 @@ func (r *Runner) handleRecord(ctx context.Context, record *kgo.Record) error {
 		record:  record,
 	}
 
-	return hndlr.Fn(rctx, string(record.Key), evt)
+	hndlr.Fn(rctx, string(record.Key), evt)
+
+	return nil
 }
 
 func (r *Runner) Run(ctx context.Context) {

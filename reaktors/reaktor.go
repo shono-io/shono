@@ -2,7 +2,7 @@ package reaktors
 
 import "github.com/shono-io/go-shono/events"
 
-type ReaktorFunc func(ctx ReaktorContext, key string, event any) error
+type ReaktorFunc func(ctx ReaktorContext, key string, event any)
 
 type ReaktorOpt func(*ReaktorInfo)
 
