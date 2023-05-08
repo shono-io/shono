@@ -3,6 +3,7 @@ module github.com/shono-io/go-shono
 go 1.20
 
 require (
+	github.com/arangodb/go-driver v0.0.0-20200618111046-f3a9751e1cf5
 	github.com/elastic/go-elasticsearch/v8 v8.7.0
 	github.com/google/uuid v1.3.0
 	github.com/invopop/jsonschema v0.7.0
@@ -10,7 +11,6 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/twmb/franz-go v1.13.2
 	github.com/twmb/franz-go/pkg/sr v0.0.0-20230414014213-9e5db4dab85b
-	github.com/arangodb/go-driver v0.0.0-20200618111046-f3a9751e1cf5
 )
 
 require (
@@ -71,7 +71,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
-	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
+	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jonboulle/clockwork v0.3.1-0.20230117163003-a89700cec744 // indirect
@@ -116,6 +116,8 @@ require (
 	github.com/serialx/hashring v0.0.0-20190422032157-8b2912629002 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/swaggest/jsonschema-go v0.3.51 // indirect
+	github.com/swaggest/refl v1.1.0 // indirect
 	github.com/testcontainers/testcontainers-go v0.19.0 // indirect
 	github.com/testcontainers/testcontainers-go/modules/compose v0.19.0 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
