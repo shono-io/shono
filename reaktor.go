@@ -47,9 +47,9 @@ func NewReaktor(id string, opt ...ReaktorOpt) (*Reaktor, error) {
 
 type ReaktorOpt func(r *Reaktor)
 
-func ListenFor(kind ...EventMeta) ReaktorOpt {
+func ListenFor(events ...*EventMeta) ReaktorOpt {
 	return func(r *Reaktor) {
-		r.Listen = kind
+		r.Listen = events
 	}
 }
 
@@ -61,6 +61,6 @@ func WithHandler(handler ReaktorFunc) ReaktorOpt {
 
 type Reaktor struct {
 	Id      string
-	Listen  []EventMeta
+	Listen  []*EventMeta
 	Handler ReaktorFunc
 }

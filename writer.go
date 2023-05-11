@@ -8,7 +8,7 @@ import (
 )
 
 type Writer interface {
-	Write(evt EventMeta, key string, payload any) error
+	Write(evt *EventMeta, key string, payload any) error
 }
 
 type kafkaWriter struct {
@@ -16,7 +16,7 @@ type kafkaWriter struct {
 	org string
 }
 
-func (w *kafkaWriter) Write(evt EventMeta, key string, payload any) error {
+func (w *kafkaWriter) Write(evt *EventMeta, key string, payload any) error {
 	val, err := evt.Encode(payload)
 	if err != nil {
 		return err
@@ -25,9 +25,9 @@ func (w *kafkaWriter) Write(evt EventMeta, key string, payload any) error {
 	record := &kgo.Record{
 		Key:   []byte(key),
 		Value: val,
-		Topic: fmt.Sprintf("%s.%s", w.org, evt.Domain),
+		Topic: fmt.Sprintf("%s.%s", w.org, evt.Space),
 		Headers: []kgo.RecordHeader{
-			{Key: events.KindHeader, Value: []byte(evt.String())},
+			{Key: events.KindHeader, Value: []byte(evt.EventId)},
 		},
 	}
 

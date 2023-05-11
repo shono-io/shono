@@ -42,7 +42,7 @@ func KeyFromContext(ctx context.Context) string {
 	return res.(string)
 }
 
-func WithEvent(ctx context.Context, evt EventMeta) context.Context {
+func WithEvent(ctx context.Context, evt *EventMeta) context.Context {
 	return context.WithValue(ctx, "event", &evt)
 }
 

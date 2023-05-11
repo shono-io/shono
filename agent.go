@@ -7,6 +7,7 @@ import (
 	"github.com/shono-io/go-shono/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
 )
 
 type AgentOpt func(a *Agent)
@@ -17,26 +18,25 @@ func WithKafkaOpts(opts ...kgo.Opt) AgentOpt {
 	}
 }
 
-func WithReaktor(r ...Reaktor) AgentOpt {
+func WithSchemaRegistryOpts(opts ...sr.Opt) AgentOpt {
 	return func(a *Agent) {
-		for _, reaktor := range r {
-			for _, event := range reaktor.Listen {
-				if _, fnd := a.reaktors[event]; fnd {
-					// -- we cannot support multiple reaktors for the same event since we cannot guarantee all
-					// -- reaktors will be called.
-					panic(fmt.Sprintf("reaktor for event %s already registered", event))
-				}
-
-				a.reaktors[event] = reaktor
-			}
-		}
+		a.srOpts = opts
 	}
 }
 
-func WithResource(res ...Resource[any]) AgentOpt {
+func WithReaktor(r ...Reaktor) AgentOpt {
 	return func(a *Agent) {
-		for _, resource := range res {
-			a.runtime.resources[resource.Id] = resource
+		for _, reaktor := range r {
+			for _, em := range reaktor.Listen {
+				if _, fnd := a.reaktors[em.EventId]; fnd {
+					// -- we cannot support multiple reaktors for the same event since we cannot guarantee all
+					// -- reaktors will be called.
+					panic(fmt.Sprintf("reaktor for event %s already registered", em.EventId))
+				}
+
+				a.reaktors[em.EventId] = &reaktor
+				a.events[em.EventId] = em
+			}
 		}
 	}
 }
@@ -47,19 +47,23 @@ func WithErrorHandler(eh ErrorHandler) AgentOpt {
 	}
 }
 
+func WithPoisonPillHandler(pph PoisonPillHandler) AgentOpt {
+	return func(a *Agent) {
+		a.pph = pph
+	}
+}
+
 func NewAgent(orgId string, appId string, opts ...AgentOpt) *Agent {
 	a := &Agent{
 		organization:  orgId,
 		applicationId: appId,
 
-		runtime: &Runtime{
-			resources: make(map[string]Resource[any]),
-		},
-
-		reaktors:   make(map[EventMeta]Reaktor),
+		events:     make(map[EventId]*EventMeta),
+		reaktors:   make(map[EventId]*Reaktor),
 		extraktors: make(map[string]Extraktor),
 
-		eh: DefaultErrorHandler,
+		eh:  DefaultErrorHandler,
+		pph: DefaultPoisonPillHandler,
 	}
 
 	for _, opt := range opts {
@@ -79,24 +83,41 @@ func DefaultErrorHandler(topic string, partition int32, err error) {
 	}
 }
 
+type PoisonPillHandler func(record *kgo.Record, err error)
+
+func DefaultPoisonPillHandler(record *kgo.Record, err error) {
+	logrus.WithField("topic", record.Topic).WithField("partition", record.Partition).Panicf("Encountered a poison pill while consuminmg: %v", err)
+}
+
 type Agent struct {
 	organization  string
 	applicationId string
 	kafkaOpts     []kgo.Opt
+	srOpts        []sr.Opt
 
-	runtime *Runtime
-
-	events     map[string]EventMeta
-	reaktors   map[EventMeta]Reaktor
+	events     map[EventId]*EventMeta
+	reaktors   map[EventId]*Reaktor
 	extraktors map[string]Extraktor
 
-	eh ErrorHandler
+	eh  ErrorHandler
+	pph PoisonPillHandler
 }
 
 func (a *Agent) Run() error {
+	src, err := sr.NewClient(a.srOpts...)
+	if err != nil {
+		return fmt.Errorf("unable to create schema registry client: %w", err)
+	}
+
+	if err := a.validateSchemas(src); err != nil {
+		return fmt.Errorf("unable to validate schemas: %w", err)
+	}
+
 	// -- get the topics from the reaktors
-	a.kafkaOpts = append(a.kafkaOpts, kgo.ConsumeTopics(a.topics()...))
+	topics := a.topics()
+	a.kafkaOpts = append(a.kafkaOpts, kgo.ConsumeTopics(topics...))
 	a.kafkaOpts = append(a.kafkaOpts, kgo.ConsumerGroup(a.applicationId))
+	a.kafkaOpts = append(a.kafkaOpts, kgo.DisableAutoCommit())
 
 	// -- create the client
 	kc, err := kgo.NewClient(a.kafkaOpts...)
@@ -105,10 +126,8 @@ func (a *Agent) Run() error {
 	}
 	defer kc.Close()
 
-	// -- set the kafka client in the runtime
-	a.runtime.kc = kc
-
 	logrus.Info("agent started")
+	logrus.Infof("listening to topics: %v", topics)
 	ctx := context.Background()
 	for {
 		fetches := kc.PollFetches(ctx)
@@ -125,12 +144,23 @@ func (a *Agent) Run() error {
 	}
 }
 
-func (a *Agent) processRecords(ctx context.Context, kc *kgo.Client, records []*kgo.Record) {
-	defer func() {
-		if err := recover(); err != nil {
-			a.eh("", -1, fmt.Errorf("panic while processing record: %v", err))
+func (a *Agent) validateSchemas(src *sr.Client) error {
+	// -- for each event, register the schema
+	for _, event := range a.events {
+		if err := event.Register(src); err != nil {
+			return fmt.Errorf("unable to register schema for event %s: %w", event.EventId, err)
 		}
-	}()
+	}
+
+	return nil
+}
+
+func (a *Agent) processRecords(ctx context.Context, kc *kgo.Client, records []*kgo.Record) {
+	//defer func() {
+	//	if err := recover(); err != nil {
+	//		a.eh("", -1, fmt.Errorf("panic while processing record: %v", err))
+	//	}
+	//}()
 
 	ctx = WithOrganization(ctx, a.organization)
 	w := &kafkaWriter{kc: kc, org: a.organization}
@@ -150,16 +180,25 @@ func (a *Agent) handleRecord(ctx context.Context, record *kgo.Record, w Writer) 
 	}
 
 	// -- get the event from the headers
-	evt := a.eventFromHeader(record.Headers)
-	if evt == nil {
+	em := a.eventFromHeader(record.Headers)
+	if em == nil {
 		// -- skip processing if we could not find the event
 		return
 	}
 
-	logrus.Debugf("received event %s", evt)
+	logrus.Debugf("received event %s", em.EventId)
+
+	// -- decode the event
+	res, err := em.Decode(record.Value)
+	if err != nil {
+		// !!! POISON PILL !!!
+		// -- if we cannot decode the event, we cannot process it
+		a.pph(record, err)
+		return
+	}
 
 	// -- find the reaktors for the event
-	reaktor, fnd := a.reaktors[*evt]
+	reaktor, fnd := a.reaktors[em.EventId]
 	if !fnd {
 		// -- skip processing if we could not find the reaktors
 		return
@@ -168,9 +207,9 @@ func (a *Agent) handleRecord(ctx context.Context, record *kgo.Record, w Writer) 
 	// -- create the context
 	rctx := WithOrganization(ctx, a.organization)
 	rctx = WithKey(rctx, string(record.Key))
-	rctx = WithEvent(rctx, *evt)
+	rctx = WithEvent(rctx, em)
 
-	reaktor.Handler(rctx, a.runtime, w)
+	reaktor.Handler(rctx, res, w)
 }
 
 func (a *Agent) eventFromHeader(headers []kgo.RecordHeader) *EventMeta {
@@ -179,18 +218,18 @@ func (a *Agent) eventFromHeader(headers []kgo.RecordHeader) *EventMeta {
 		return nil
 	}
 
-	event, fnd := a.events[value]
+	event, fnd := a.events[EventId(value)]
 	if !fnd {
 		return nil
 	}
 
-	return &event
+	return event
 }
 
 func (a *Agent) topics() []string {
-	var topics map[string]struct{}
+	topics := map[string]struct{}{}
 	for evt, _ := range a.reaktors {
-		topic := fmt.Sprintf("%s.%s", a.organization, evt.Domain)
+		topic := fmt.Sprintf("%s.%s", a.organization, evt.Space())
 		topics[topic] = struct{}{}
 	}
 
