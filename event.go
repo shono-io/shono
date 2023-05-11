@@ -1,18 +1,15 @@
 package go_shono
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/invopop/jsonschema"
-	"github.com/twmb/franz-go/pkg/sr"
 	"strings"
 )
 
-func NewEvent(eid EventId, payload any) *EventMeta {
+func NewEvent(eid EventId, payload any, serde Serde) *EventMeta {
 	return &EventMeta{
 		EventId: eid,
 		payload: payload,
+		serde:   serde,
 	}
 }
 
@@ -49,29 +46,29 @@ func (e EventId) Code() string {
 type EventMeta struct {
 	EventId
 	payload any
-	serde   sr.Serde
+	serde   Serde
 }
 
-func (e *EventMeta) Register(client *sr.Client) error {
-	// -- get the schema of the event
-	s := jsonschema.Reflect(e.payload)
-	sb, err := json.Marshal(s)
-	if err != nil {
-		return fmt.Errorf("unable to marshal schema: %w", err)
-	}
-
-	sch := sr.Schema{Type: sr.TypeJSON, Schema: string(sb)}
-
-	// -- check if we can create the schema
-	ss, err := client.CreateSchema(context.Background(), string(e.EventId), sch)
-	if err != nil {
-		return fmt.Errorf("unable to register schema: %w", err)
-	}
-
-	e.serde.Register(ss.ID, e.payload, sr.EncodeFn(json.Marshal), sr.DecodeFn(json.Unmarshal))
-
-	return nil
-}
+//func (e *EventMeta) Register(client *sr.Client) error {
+//	// -- get the schema of the event
+//	s := jsonschema.Reflect(e.payload)
+//	sb, err := json.Marshal(s)
+//	if err != nil {
+//		return fmt.Errorf("unable to marshal schema: %w", err)
+//	}
+//
+//	sch := sr.Schema{Type: sr.TypeJSON, Schema: string(sb)}
+//
+//	// -- check if we can create the schema
+//	ss, err := client.CreateSchema(context.Background(), string(e.EventId), sch)
+//	if err != nil {
+//		return fmt.Errorf("unable to register schema: %w", err)
+//	}
+//
+//	e.serde.Register(ss.ID, e.payload, sr.EncodeFn(json.Marshal), sr.DecodeFn(json.Unmarshal))
+//
+//	return nil
+//}
 
 func (e *EventMeta) Encode(payload any) ([]byte, error) {
 	return e.serde.Encode(payload)
