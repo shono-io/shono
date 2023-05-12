@@ -1,8 +1,14 @@
 package shono
 
 type config struct {
-	Kafka          KafkaConfig          `json:"kafka"`
-	SchemaRegistry SchemaRegistryConfig `json:"schema_registry"`
+	Stream         *StreamConfig         `json:"stream,omitempty"`
+	Kafka          *KafkaConfig          `json:"kafka,omitempty"`
+	SchemaRegistry *SchemaRegistryConfig `json:"schema_registry,omitempty"`
+}
+
+type StreamConfig struct {
+	Host  string `json:"host"`
+	Token string `json:"token"`
 }
 
 type SchemaRegistryConfig struct {

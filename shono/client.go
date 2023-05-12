@@ -1,17 +1,14 @@
 package shono
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/twmb/franz-go/pkg/kgo"
-	"github.com/twmb/franz-go/pkg/sasl/plain"
-	"github.com/twmb/franz-go/pkg/sr"
+	"github.com/memphisdev/memphis.go"
+	go_shono "github.com/shono-io/go-shono"
+	memphis2 "github.com/shono-io/go-shono/memphis"
 	"io"
-	"net"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type ClientConfig struct {
@@ -42,7 +39,7 @@ func WithUrl(url string) ClientOpt {
 	}
 }
 
-func NewClient(opts ...ClientOpt) (*Client, error) {
+func NewClient(id string, opts ...ClientOpt) (*Client, error) {
 	co := &ClientConfig{
 		Url: "https://dev-api.shono.io",
 	}
@@ -61,61 +58,44 @@ func NewClient(opts ...ClientOpt) (*Client, error) {
 		return nil, fmt.Errorf("failed to get config from shono: %w", err)
 	}
 
-	kc, err := getKafkaClient(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create kafka client: %w", err)
+	if cfg.Stream == nil {
+		return nil, fmt.Errorf("no stream config found")
 	}
 
-	src, err := getSchemaRegistryClient(cfg)
+	c, err := memphis.Connect(cfg.Stream.Host, fmt.Sprintf("org.%s", co.Org), memphis.ConnectionToken(cfg.Stream.Token))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create schema registry client: %w", err)
+		return nil, fmt.Errorf("failed to connect to the shono stream: %w", err)
 	}
 
-	return &Client{kc, src}, nil
+	return &Client{id: id, c: c}, nil
 }
 
 type Client struct {
-	kc  *kgo.Client
-	src *sr.Client
-}
+	id string
+	c  *memphis.Conn
 
-func (c *Client) Kafka() *kgo.Client {
-	return c.kc
-}
-
-func (c *Client) SchemaRegistry() *sr.Client {
-	return c.src
+	run *memphis2.Runner
 }
 
 func (c *Client) Close() {
-	c.kc.Close()
+	if c.run != nil {
+		c.run.Close()
+	}
+
+	c.c.Close()
 }
 
-func getKafkaClient(config *config) (*kgo.Client, error) {
-	var opts []kgo.Opt
-	opts = append(opts, kgo.SeedBrokers(config.Kafka.Brokers...))
-
-	if config.Kafka.Username != "" && config.Kafka.Password != "" {
-		opts = append(opts, kgo.SASL(plain.Auth{User: config.Kafka.Username, Pass: config.Kafka.Password}.AsMechanism()))
+func (c *Client) Listen(r *go_shono.Router) error {
+	if c.run != nil {
+		return fmt.Errorf("already listening")
 	}
 
-	if config.Kafka.Tls {
-		tlsDialer := &tls.Dialer{NetDialer: &net.Dialer{Timeout: 10 * time.Second}}
-		opts = append(opts, kgo.Dialer(tlsDialer.DialContext))
-	}
-
-	return kgo.NewClient(opts...)
+	c.run = memphis2.NewRunner(c.id, r, c.c)
+	return c.run.Run()
 }
 
-func getSchemaRegistryClient(config *config) (*sr.Client, error) {
-	var opts []sr.Opt
-	opts = append(opts, sr.URLs(config.SchemaRegistry.Urls...))
-
-	if config.SchemaRegistry.Username != "" && config.SchemaRegistry.Password != "" {
-		opts = append(opts, sr.BasicAuth(config.SchemaRegistry.Username, config.SchemaRegistry.Password))
-	}
-
-	return sr.NewClient(opts...)
+func (c *Client) Id() string {
+	return c.id
 }
 
 func getConfig(at string, org string, baseUrl string) (*config, error) {

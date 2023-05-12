@@ -8,19 +8,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewRunner(name string, r *go_shono.Router, host string, username string, option ...memphis.Option) (*Runner, error) {
-	c, err := memphis.Connect(host, username, option...)
-	if err != nil {
-		return nil, fmt.Errorf("unable to connect to memphis: %w", err)
-	}
-
+func NewRunner(name string, r *go_shono.Router, c *memphis.Conn) *Runner {
 	return &Runner{
 		name:           name,
 		c:              c,
 		w:              NewWriter(name, c),
 		r:              r,
 		scopeConsumers: make(map[string]*memphis.Consumer),
-	}, nil
+	}
 }
 
 type Runner struct {
@@ -68,7 +63,7 @@ func (r *Runner) handler(msgs []*memphis.Msg, err error, ctx context.Context) {
 		}
 
 		// -- get the reaktor for the event
-		r.r.Process(context.Background(), go_shono.EventId(eid), msg.Data(), NewWriter("reaktor", r.c))
+		r.r.Process(context.Background(), go_shono.EventId(eid), msg.Data(), NewWriter(r.name, r.c))
 
 		// -- ack the message
 		msg.Ack()
