@@ -90,3 +90,19 @@ func (r *Router) Process(ctx context.Context, eid EventId, data []byte, w Writer
 
 	reaktor.Handler(rctx, res, w)
 }
+
+func (r *Router) Scopes() []string {
+	var scopes = make(map[string]bool)
+	for _, s := range r.reaktors {
+		for _, eid := range s.Listen {
+			scopes[fmt.Sprintf("%s.%s", eid.Organization(), eid.Space())] = true
+		}
+	}
+
+	var result []string
+	for scope := range scopes {
+		result = append(result, scope)
+	}
+
+	return result
+}
