@@ -55,24 +55,25 @@ func NewClient(id string, opts ...ClientOpt) (*Client, error) {
 
 	cfg, err := getConfig(at, co.Org, co.Url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get config from shono: %w", err)
+		return nil, fmt.Errorf("failed to get Config from shono: %w", err)
 	}
 
 	if cfg.Stream == nil {
-		return nil, fmt.Errorf("no stream config found")
+		return nil, fmt.Errorf("no stream Config found")
 	}
 
-	c, err := memphis.Connect(cfg.Stream.Host, fmt.Sprintf("org.%s", co.Org), memphis.ConnectionToken(cfg.Stream.Token))
+	c, err := memphis.Connect(cfg.Stream.Host, fmt.Sprintf("org.%s", co.Org), memphis.Password(cfg.Stream.Token))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the shono stream: %w", err)
 	}
 
-	return &Client{id: id, c: c}, nil
+	return &Client{id: id, config: cfg, c: c}, nil
 }
 
 type Client struct {
-	id string
-	c  *memphis.Conn
+	id     string
+	config *Config
+	c      *memphis.Conn
 
 	run *memphis2.Runner
 }
@@ -98,18 +99,26 @@ func (c *Client) Id() string {
 	return c.id
 }
 
-func getConfig(at string, org string, baseUrl string) (*config, error) {
+func (c *Client) Backbone() (Backbone, error) {
+	if c.config.Backbone == nil {
+		return nil, fmt.Errorf("no backbone Config found")
+	}
+
+	return NewBackbone(c.id, c.config.Backbone.Kind, c.config.Backbone.Properties)
+}
+
+func getConfig(at string, org string, baseUrl string) (*Config, error) {
 	url := fmt.Sprintf("%s/organizations/%s/config", baseUrl, org)
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", at))
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get config from shono: %w", err)
+		return nil, fmt.Errorf("unable to make the request to %s: %w", url, err)
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unable to get config from shono: %s", res.Status)
+		return nil, fmt.Errorf("request to %s did not return ok: %s", url, res.Status)
 	}
 
 	defer res.Body.Close()
@@ -118,7 +127,7 @@ func getConfig(at string, org string, baseUrl string) (*config, error) {
 		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
 
-	var body config
+	var body Config
 	if err := json.Unmarshal(b, &body); err != nil {
 		return nil, err
 	}

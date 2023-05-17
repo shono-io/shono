@@ -1,4 +1,4 @@
-package shono
+package events
 
 import go_shono "github.com/shono-io/go-shono"
 

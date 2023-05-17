@@ -1,4 +1,4 @@
-package shono
+package events
 
 import go_shono "github.com/shono-io/go-shono"
 
@@ -31,8 +31,9 @@ type ScopeCreationRequestedEvent struct {
 }
 
 type ScopeCreatedEvent struct {
-	Code string `json:"code"`
-	Name string `json:"name"`
+	Organization string `json:"organization"`
+	Code         string `json:"code"`
+	Name         string `json:"name"`
 }
 
 type ScopeDeletionRequestedEvent struct {
