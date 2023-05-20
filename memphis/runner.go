@@ -63,7 +63,7 @@ func (r *Runner) handler(msgs []*memphis.Msg, err error, ctx context.Context) {
 		}
 
 		// -- get the reaktor for the event
-		r.r.Process(context.Background(), go_shono.EventId(eid), msg.Data(), NewWriter(r.name, r.c))
+		r.r.Process(context.Background(), go_shono.EventId(eid), msg.Data())
 
 		// -- ack the message
 		msg.Ack()

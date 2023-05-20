@@ -14,7 +14,7 @@ type ReaktorContext interface {
 	Header(key string) []byte
 }
 
-type ReaktorFunc func(ctx context.Context, evt any, w Writer)
+type ReaktorFunc func(ctx context.Context, evt any)
 
 func MustNewReaktor(id string, opt ...ReaktorOpt) Reaktor {
 	r, err := NewReaktor(id, opt...)
@@ -23,6 +23,10 @@ func MustNewReaktor(id string, opt ...ReaktorOpt) Reaktor {
 	}
 
 	return *r
+}
+
+func NewSingleEventReaktor(event *EventMeta, fn ReaktorFunc) (*Reaktor, error) {
+	return NewReaktor(string(event.EventId), ListenFor(event), WithHandler(fn))
 }
 
 func NewReaktor(id string, opt ...ReaktorOpt) (*Reaktor, error) {

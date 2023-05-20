@@ -54,7 +54,7 @@ func (r *Router) Register(reaktor Reaktor) {
 	}
 }
 
-func (r *Router) Process(ctx context.Context, eid EventId, data []byte, w Writer) {
+func (r *Router) Process(ctx context.Context, eid EventId, data []byte) {
 	if data == nil {
 		return
 	}
@@ -88,7 +88,7 @@ func (r *Router) Process(ctx context.Context, eid EventId, data []byte, w Writer
 	// -- create the context
 	rctx := WithEvent(ctx, em)
 
-	reaktor.Handler(rctx, res, w)
+	reaktor.Handler(rctx, res)
 }
 
 func (r *Router) Scopes() []string {
