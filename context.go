@@ -42,6 +42,19 @@ func KeyFromContext(ctx context.Context) string {
 	return res.(string)
 }
 
+func WithCorrelationId(ctx context.Context, cid string) context.Context {
+	return context.WithValue(ctx, "correlation_id", &cid)
+}
+
+func CorrelationIdFromContext(ctx context.Context) *string {
+	res := ctx.Value("correlation_id")
+	if res == nil {
+		return nil
+	}
+
+	return res.(*string)
+}
+
 func WithEvent(ctx context.Context, evt *EventMeta) context.Context {
 	return context.WithValue(ctx, "event", &evt)
 }

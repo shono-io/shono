@@ -2,6 +2,7 @@ package go_shono
 
 import "encoding/json"
 
+const CorrelationHeader = "io.shono.correlation"
 const KindHeader = "io.shono.kind"
 
 type Serde interface {

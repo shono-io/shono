@@ -15,19 +15,20 @@ type Writer struct {
 	c    *memphis.Conn
 }
 
-func (w *Writer) MustWrite(evt *go_shono.EventMeta, payload any) {
-	if err := w.Write(evt, payload); err != nil {
+func (w *Writer) MustWrite(correlationId string, evt *go_shono.EventMeta, payload any) {
+	if err := w.Write(correlationId, evt, payload); err != nil {
 		panic(err)
 	}
 }
 
-func (w *Writer) Write(evt *go_shono.EventMeta, payload any) error {
+func (w *Writer) Write(correlationId string, evt *go_shono.EventMeta, payload any) error {
 	// -- station
 	station := fmt.Sprintf("%s.%s", evt.Organization(), evt.Space())
 
 	h := memphis.Headers{}
 	h.New()
 	h.Add(go_shono.KindHeader, string(evt.EventId))
+	h.Add(go_shono.CorrelationHeader, correlationId)
 	if err := w.c.Produce(station, w.name, payload, []memphis.ProducerOpt{}, []memphis.ProduceOpt{memphis.MsgHeaders(h)}); err != nil {
 		return fmt.Errorf("failed to send event: %w", err)
 	}

@@ -5,7 +5,9 @@ import (
 	"github.com/memphisdev/memphis.go"
 	go_shono "github.com/shono-io/go-shono"
 	"github.com/shono-io/go-shono/events"
+	"github.com/shono-io/go-shono/utils"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 var (
@@ -50,6 +52,8 @@ type MemphisBackbone struct {
 	c   *memphis.Conn
 	w   *Writer
 	run *Runner
+
+	handlers map[string]chan any
 }
 
 func (b *MemphisBackbone) Close() {
@@ -60,12 +64,12 @@ func (b *MemphisBackbone) Close() {
 	b.c.Close()
 }
 
-func (b *MemphisBackbone) MustWrite(evt *go_shono.EventMeta, payload any) {
-	b.w.MustWrite(evt, payload)
+func (b *MemphisBackbone) MustWrite(correlationId string, evt *go_shono.EventMeta, payload any) {
+	b.w.MustWrite(correlationId, evt, payload)
 }
 
-func (b *MemphisBackbone) Write(evt *go_shono.EventMeta, payload any) error {
-	return b.w.Write(evt, payload)
+func (b *MemphisBackbone) Write(correlationId string, evt *go_shono.EventMeta, payload any) error {
+	return b.w.Write(correlationId, evt, payload)
 }
 
 func (b *MemphisBackbone) Listen(r *go_shono.Router) error {
@@ -75,6 +79,21 @@ func (b *MemphisBackbone) Listen(r *go_shono.Router) error {
 
 	b.run = NewRunner(b.id, r, b.c)
 	return b.run.Run()
+}
+
+func (b *MemphisBackbone) WaitFor(correlationId string, timeout time.Duration, possibleEvents ...*go_shono.EventMeta) (go_shono.EventId, any, error) {
+	c, err := b.run.RegisterCallback(correlationId, timeout, possibleEvents...)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// -- wait for the channel to complete
+	res := <-c
+	if res.timedOut {
+		return "", nil, utils.ErrTimeout
+	} else {
+		return res.Event, *res.Value, nil
+	}
 }
 
 func (b *MemphisBackbone) Apply(eid go_shono.EventId, event any) error {

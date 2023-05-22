@@ -55,28 +55,20 @@ func (r *Router) Register(reaktor Reaktor) {
 }
 
 func (r *Router) Process(ctx context.Context, eid EventId, data []byte) {
-	if data == nil {
-		return
-	}
-
-	// -- get the event from the headers
-	logrus.Debugf("received event %s", eid)
-
-	// -- get the event metadata
-	em, fnd := r.events[eid]
-	if !fnd {
-		// -- skip processing if we could not find the event
-		return
-	}
-
-	// -- decode the event
-	res, err := em.Decode(data)
+	res, em, err := r.Decode(eid, data)
 	if err != nil {
 		// !!! POISON PILL !!!
 		// -- if we cannot decode the event, we cannot process it
 		r.pph(ctx, eid, data, err)
 		return
 	}
+
+	if res == nil {
+		return
+	}
+
+	// -- get the event from the headers
+	logrus.Debugf("received event %s", eid)
 
 	// -- find the reaktors for the event
 	reaktor, fnd := r.reaktors[em.EventId]
@@ -89,6 +81,22 @@ func (r *Router) Process(ctx context.Context, eid EventId, data []byte) {
 	rctx := WithEvent(ctx, em)
 
 	reaktor.Handler(rctx, res)
+}
+
+func (r *Router) Decode(eid EventId, data []byte) (any, *EventMeta, error) {
+	if data == nil {
+		return nil, nil, nil
+	}
+	// -- get the event metadata
+	em, fnd := r.events[eid]
+	if !fnd {
+		// -- skip processing if we could not find the event
+		return nil, em, nil
+	}
+
+	// -- decode the event
+	res, err := em.Decode(data)
+	return res, em, err
 }
 
 func (r *Router) Scopes() []string {
