@@ -22,7 +22,7 @@ func WithPoisonPillHandler(pph PoisonPillHandler) RouterOpt {
 
 type Router struct {
 	events   map[EventId]*EventMeta
-	reaktors map[EventId]*Reaktor
+	reaktors map[EventId][]*Reaktor
 
 	pph PoisonPillHandler
 }
@@ -30,7 +30,7 @@ type Router struct {
 func NewRouter(opts ...RouterOpt) *Router {
 	res := &Router{
 		events:   make(map[EventId]*EventMeta),
-		reaktors: make(map[EventId]*Reaktor),
+		reaktors: make(map[EventId][]*Reaktor),
 		pph:      DefaultPoisonPillHandler,
 	}
 
@@ -43,13 +43,11 @@ func NewRouter(opts ...RouterOpt) *Router {
 
 func (r *Router) Register(reaktor Reaktor) {
 	for _, em := range reaktor.Listen {
-		if _, fnd := r.reaktors[em.EventId]; fnd {
-			// -- we cannot support multiple reaktors for the same event since we cannot guarantee all
-			// -- reaktors will be called.
-			panic(fmt.Sprintf("reaktor for event %s already registered", em.EventId))
+		if _, fnd := r.reaktors[em.EventId]; !fnd {
+			r.reaktors[em.EventId] = make([]*Reaktor, 0)
 		}
 
-		r.reaktors[em.EventId] = &reaktor
+		r.reaktors[em.EventId] = append(r.reaktors[em.EventId], &reaktor)
 		r.events[em.EventId] = em
 	}
 }
@@ -71,7 +69,7 @@ func (r *Router) Process(ctx context.Context, eid EventId, data []byte) {
 	logrus.Debugf("received event %s", eid)
 
 	// -- find the reaktors for the event
-	reaktor, fnd := r.reaktors[em.EventId]
+	reaktors, fnd := r.reaktors[em.EventId]
 	if !fnd {
 		// -- skip processing if we could not find the reaktors
 		return
@@ -80,7 +78,9 @@ func (r *Router) Process(ctx context.Context, eid EventId, data []byte) {
 	// -- create the context
 	rctx := WithEvent(ctx, em)
 
-	reaktor.Handler(rctx, res)
+	for _, reaktor := range reaktors {
+		go reaktor.Handler(rctx, res)
+	}
 }
 
 func (r *Router) Decode(eid EventId, data []byte) (any, *EventMeta, error) {
@@ -101,9 +101,11 @@ func (r *Router) Decode(eid EventId, data []byte) (any, *EventMeta, error) {
 
 func (r *Router) Scopes() []string {
 	var scopes = make(map[string]bool)
-	for _, s := range r.reaktors {
-		for _, eid := range s.Listen {
-			scopes[fmt.Sprintf("%s.%s", eid.Organization(), eid.Space())] = true
+	for _, rs := range r.reaktors {
+		for _, s := range rs {
+			for _, eid := range s.Listen {
+				scopes[fmt.Sprintf("%s.%s", eid.Organization(), eid.Space())] = true
+			}
 		}
 	}
 

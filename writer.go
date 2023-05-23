@@ -1,6 +1,8 @@
 package go_shono
 
+import "context"
+
 type Writer interface {
-	MustWrite(correlationId string, evt *EventMeta, payload any)
-	Write(correlationId string, evt *EventMeta, payload any) error
+	MustWrite(ctx context.Context, correlationId string, evt *EventMeta, payload Payload)
+	Write(ctx context.Context, correlationId string, evt *EventMeta, payload Payload) error
 }

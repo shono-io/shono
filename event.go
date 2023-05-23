@@ -5,7 +5,11 @@ import (
 	"strings"
 )
 
-func NewEvent(eid EventId, payload any, serde Serde) *EventMeta {
+type Payload interface {
+	Key() string
+}
+
+func NewEvent(eid EventId, payload Payload, serde Serde) *EventMeta {
 	return &EventMeta{
 		EventId: eid,
 		payload: payload,
@@ -45,7 +49,7 @@ func (e EventId) Code() string {
 
 type EventMeta struct {
 	EventId
-	payload any
+	payload Payload
 	serde   Serde
 }
 
@@ -70,11 +74,11 @@ type EventMeta struct {
 //	return nil
 //}
 
-func (e *EventMeta) Encode(payload any) ([]byte, error) {
+func (e *EventMeta) Encode(payload Payload) ([]byte, error) {
 	return e.serde.Encode(payload)
 }
 
-func (e *EventMeta) Decode(value []byte) (any, error) {
+func (e *EventMeta) Decode(value []byte) (Payload, error) {
 	t := e.payload
 	if err := e.serde.Decode(value, &t); err != nil {
 		return nil, err

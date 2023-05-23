@@ -30,16 +30,16 @@ func OrganizationFromContext(ctx context.Context) string {
 }
 
 func WithKey(ctx context.Context, key string) context.Context {
-	return context.WithValue(ctx, "key", key)
+	return context.WithValue(ctx, "key", &key)
 }
 
-func KeyFromContext(ctx context.Context) string {
+func KeyFromContext(ctx context.Context) *string {
 	res := ctx.Value("key")
 	if res == nil {
-		return ""
+		return nil
 	}
 
-	return res.(string)
+	return res.(*string)
 }
 
 func WithCorrelationId(ctx context.Context, cid string) context.Context {

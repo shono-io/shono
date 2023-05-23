@@ -1,12 +1,11 @@
 package memphis
 
 import (
+	"context"
 	"fmt"
 	"github.com/memphisdev/memphis.go"
 	go_shono "github.com/shono-io/go-shono"
-	"github.com/shono-io/go-shono/events"
 	"github.com/shono-io/go-shono/utils"
-	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -64,12 +63,12 @@ func (b *MemphisBackbone) Close() {
 	b.c.Close()
 }
 
-func (b *MemphisBackbone) MustWrite(correlationId string, evt *go_shono.EventMeta, payload any) {
-	b.w.MustWrite(correlationId, evt, payload)
+func (b *MemphisBackbone) MustWrite(ctx context.Context, correlationId string, evt *go_shono.EventMeta, payload go_shono.Payload) {
+	b.w.MustWrite(ctx, correlationId, evt, payload)
 }
 
-func (b *MemphisBackbone) Write(correlationId string, evt *go_shono.EventMeta, payload any) error {
-	return b.w.Write(correlationId, evt, payload)
+func (b *MemphisBackbone) Write(ctx context.Context, correlationId string, evt *go_shono.EventMeta, payload go_shono.Payload) error {
+	return b.w.Write(ctx, correlationId, evt, payload)
 }
 
 func (b *MemphisBackbone) Listen(r *go_shono.Router) error {
@@ -97,29 +96,29 @@ func (b *MemphisBackbone) WaitFor(correlationId string, timeout time.Duration, p
 }
 
 func (b *MemphisBackbone) Apply(eid go_shono.EventId, event any) error {
-	switch eid {
-	case events.ScopeCreated.EventId:
-		return b.onScopeCreated(event.(*events.ScopeCreatedEvent))
-	case events.ScopeDeleted.EventId:
-		return b.onScopeDeleted(event.(*events.ScopeDeletedEvent))
-	}
+	//switch eid {
+	//case events.ScopeCreated.EventId:
+	//	return b.onScopeCreated(event.(*events.ScopeCreatedEvent))
+	//case events.ScopeDeleted.EventId:
+	//	return b.onScopeDeleted(event.(*events.ScopeDeletedEvent))
+	//}
 
 	return nil
 }
 
-func (b *MemphisBackbone) onScopeCreated(event *events.ScopeCreatedEvent) error {
-	stationName := fmt.Sprintf("%s.%s", event.Organization, event.Code)
-	logrus.Debugf("creating station: %s", stationName)
-	_, err := b.c.CreateStation(stationName)
-	return err
-}
-
-func (b *MemphisBackbone) onScopeDeleted(event *events.ScopeDeletedEvent) error {
-	stationName := fmt.Sprintf("%s.%s", event.Organization, event.Code)
-	logrus.Debugf("creating station: %s", stationName)
-	s, err := b.c.CreateStation(stationName)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve station: %v", err)
-	}
-	return s.Destroy()
-}
+//func (b *MemphisBackbone) onScopeCreated(event *events.ScopeCreatedEvent) error {
+//	stationName := fmt.Sprintf("%s.%s", event.Organization, event.Code)
+//	logrus.Debugf("creating station: %s", stationName)
+//	_, err := b.c.CreateStation(stationName)
+//	return err
+//}
+//
+//func (b *MemphisBackbone) onScopeDeleted(event *events.ScopeDeletedEvent) error {
+//	stationName := fmt.Sprintf("%s.%s", event.Organization, event.Code)
+//	logrus.Debugf("creating station: %s", stationName)
+//	s, err := b.c.CreateStation(stationName)
+//	if err != nil {
+//		return fmt.Errorf("failed to retrieve station: %v", err)
+//	}
+//	return s.Destroy()
+//}

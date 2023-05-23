@@ -1,6 +1,7 @@
 package memphis
 
 import (
+	"context"
 	"fmt"
 	"github.com/memphisdev/memphis.go"
 	go_shono "github.com/shono-io/go-shono"
@@ -15,13 +16,13 @@ type Writer struct {
 	c    *memphis.Conn
 }
 
-func (w *Writer) MustWrite(correlationId string, evt *go_shono.EventMeta, payload any) {
-	if err := w.Write(correlationId, evt, payload); err != nil {
+func (w *Writer) MustWrite(ctx context.Context, correlationId string, evt *go_shono.EventMeta, payload go_shono.Payload) {
+	if err := w.Write(ctx, correlationId, evt, payload); err != nil {
 		panic(err)
 	}
 }
 
-func (w *Writer) Write(correlationId string, evt *go_shono.EventMeta, payload any) error {
+func (w *Writer) Write(ctx context.Context, correlationId string, evt *go_shono.EventMeta, payload go_shono.Payload) error {
 	// -- station
 	station := fmt.Sprintf("%s.%s", evt.Organization(), evt.Space())
 
