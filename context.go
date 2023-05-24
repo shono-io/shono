@@ -3,6 +3,7 @@ package go_shono
 import (
 	"context"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"time"
 )
 
 type SendOpt func(r *kgo.Record)
@@ -66,4 +67,17 @@ func EventFromContext(ctx context.Context) *EventMeta {
 	}
 
 	return res.(*EventMeta)
+}
+
+func WithEventTimestamp(ctx context.Context, time time.Time) context.Context {
+	return context.WithValue(ctx, "event_timestamp", &time)
+}
+
+func EventTimestampFromContext(ctx context.Context) *time.Time {
+	res := ctx.Value("event_timestamp")
+	if res == nil {
+		return nil
+	}
+
+	return res.(*time.Time)
 }

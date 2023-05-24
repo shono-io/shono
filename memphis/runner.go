@@ -109,6 +109,7 @@ func (r *Runner) handler(msgs []*memphis.Msg, err error, ctx context.Context) {
 		}
 
 		pctx = go_shono.WithCorrelationId(pctx, corId)
+		pctx = go_shono.WithEventTimestamp(pctx, time.Now())
 
 		r.r.Process(pctx, go_shono.EventId(eid), msg.Data())
 

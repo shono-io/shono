@@ -88,6 +88,7 @@ func (r *Runner) handleRecord(ctx context.Context, msg *kafkaMsg) error {
 
 	pctx := go_shono.WithCorrelationId(ctx, corId)
 	pctx = go_shono.WithKey(pctx, string(msg.Record.Key))
+	pctx = go_shono.WithEventTimestamp(pctx, msg.Record.Timestamp)
 
 	r.r.Process(pctx, go_shono.EventId(eid), msg.Record.Value)
 
