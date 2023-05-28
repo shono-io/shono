@@ -3,7 +3,7 @@ module github.com/shono-io/go-shono
 go 1.20
 
 require (
-	github.com/arangodb/go-driver v0.0.0-20200618111046-f3a9751e1cf5
+	github.com/arangodb/go-driver v1.5.2
 	github.com/elastic/go-elasticsearch/v8 v8.7.0
 	github.com/google/uuid v1.3.0
 	github.com/invopop/jsonschema v0.7.0

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/memphisdev/memphis.go"
 	go_shono "github.com/shono-io/go-shono"
+	"github.com/shono-io/go-shono/backbone"
 	memphis2 "github.com/shono-io/go-shono/memphis"
 	"io"
 	"net/http"
@@ -99,12 +100,12 @@ func (c *Client) Id() string {
 	return c.id
 }
 
-func (c *Client) Backbone() (Backbone, error) {
+func (c *Client) Backbone() (backbone.Backbone, error) {
 	if c.config.Backbone == nil {
 		return nil, fmt.Errorf("no backbone Config found")
 	}
 
-	return NewBackbone(c.id, c.config.Backbone.Kind, c.config.Backbone.Properties)
+	return backbone.NewBackbone(c.id, c.config.Backbone.Kind, c.config.Backbone.Properties)
 }
 
 func getConfig(at string, org string, baseUrl string) (*Config, error) {
