@@ -1,6 +1,7 @@
 package shono
 
 type Store interface {
+	ScopeCode() string
 	ConceptCode() string
 	Entity
 

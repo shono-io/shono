@@ -12,7 +12,7 @@ import (
 )
 
 var arangodbSpec = service.NewConfigSpec().
-	Field(service.NewStringField("url").Default("http://localhost:8529").Description("The URL of the ArangoDB server")).
+	Field(service.NewStringListField("urls").Default("http://localhost:8529").Description("The URLs of the ArangoDB server")).
 	Field(service.NewStringField("username").Default("root").Description("The username to use when connecting to the ArangoDB server")).
 	Field(service.NewStringField("password").Default("").Description("The password to use when connecting to the ArangoDB server").Secret()).
 	Field(service.NewStringField("database").Default("_system").Description("The database to use when connecting to the ArangoDB server")).
@@ -20,7 +20,7 @@ var arangodbSpec = service.NewConfigSpec().
 
 func init() {
 	err := service.RegisterCache("arangodb", arangodbSpec, func(conf *service.ParsedConfig, mgr *service.Resources) (service.Cache, error) {
-		url, err := conf.FieldStringList("url")
+		url, err := conf.FieldStringList("urls")
 		if err != nil {
 			return nil, fmt.Errorf("failed to get url: %w", err)
 		}

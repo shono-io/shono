@@ -1,4 +1,4 @@
-package shono
+package benthos
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	_ "github.com/benthosdev/benthos/v4/public/components/all"
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/rs/xid"
+	"github.com/shono-io/shono"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,13 +18,13 @@ func WithId(id string) Opt {
 	}
 }
 
-func WithBackbone(bb Backbone) Opt {
+func WithBackbone(bb shono.Backbone) Opt {
 	return func(r *Runtime) {
 		r.bb = bb
 	}
 }
 
-func WithReaktor(reaktors ...Reaktor) Opt {
+func WithReaktor(reaktors ...shono.Reaktor) Opt {
 	return func(r *Runtime) {
 		r.reaktors = append(r.reaktors, reaktors...)
 	}
@@ -45,7 +46,7 @@ func NewRuntime(opts ...Opt) (*Runtime, error) {
 	result := &Runtime{
 		id:       xid.New().String(),
 		bb:       nil,
-		reaktors: []Reaktor{},
+		reaktors: []shono.Reaktor{},
 		logger:   nil,
 		threads:  1,
 	}
@@ -63,8 +64,8 @@ func NewRuntime(opts ...Opt) (*Runtime, error) {
 
 type Runtime struct {
 	id       string
-	bb       Backbone
-	reaktors []Reaktor
+	bb       shono.Backbone
+	reaktors []shono.Reaktor
 
 	logger  service.PrintLogger
 	threads int
