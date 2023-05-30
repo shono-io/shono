@@ -38,3 +38,14 @@ type Backbone interface {
 
 	Close()
 }
+
+type Kind string
+
+var (
+	KafkaKind Kind = "kafka_franz"
+)
+
+type Config struct {
+	Kind     Kind
+	Settings map[string]any
+}

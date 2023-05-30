@@ -2,7 +2,7 @@ package local
 
 import (
 	"fmt"
-	"github.com/shono-io/go-shono/backbone"
+	_ "github.com/benthosdev/benthos/v4/public/components/all"
 	"github.com/shono-io/go-shono/shono"
 )
 
@@ -15,7 +15,7 @@ type Config struct {
 
 type ClientOpt func(*Config)
 
-func NewClient(id string, bb backbone.Backbone, scopeRepo shono.ScopeRepo, opts ...ClientOpt) (shono.Client, error) {
+func NewClient(id string, scopeRepo shono.ScopeRepo, resourceRepo shono.ResourceRepo, opts ...ClientOpt) (shono.Client, error) {
 	co := Config{
 		Url: "https://dev-api.shono.io",
 	}
@@ -24,7 +24,7 @@ func NewClient(id string, bb backbone.Backbone, scopeRepo shono.ScopeRepo, opts 
 		opt(&co)
 	}
 
-	cl := &client{id, co, bb, scopeRepo}
+	cl := &client{id, co, scopeRepo, resourceRepo}
 
 	if err := cl.validate(); err != nil {
 		return nil, err
@@ -37,9 +37,8 @@ type client struct {
 	id  string
 	cfg Config
 
-	bb backbone.Backbone
-
 	shono.ScopeRepo
+	shono.ResourceRepo
 }
 
 func (c *client) validate() error {
@@ -47,19 +46,15 @@ func (c *client) validate() error {
 		return fmt.Errorf("client id is not set")
 	}
 
-	if c.bb == nil {
-		return fmt.Errorf("client backbone is not set")
-	}
-
 	if c.ScopeRepo == nil {
 		return fmt.Errorf("client scope repo is not set")
 	}
 
-	return nil
-}
+	if c.ResourceRepo == nil {
+		return fmt.Errorf("client resource repo is not set")
+	}
 
-func (c *client) Backbone() backbone.Backbone {
-	return c.bb
+	return nil
 }
 
 func (c *client) Close() {}
