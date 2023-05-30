@@ -1,66 +1,58 @@
-package go_shono
+package shono
 
 import (
-	"context"
-	"errors"
-	"time"
+	"fmt"
+	"github.com/shono-io/shono/logic"
 )
 
-type ReaktorContext interface {
-	Context
+// == ENTITY ==========================================================================================================
 
-	Key() string
-	Timestamp() time.Time
-	Header(key string) []byte
+type Reaktor interface {
+	Entity
+	InputEvent() EventId
+	OutputEvents() []EventId
+	Logic() logic.Logic
+	Stores() []Store
 }
 
-type ReaktorFunc func(ctx context.Context, evt any, w Writer)
-
-func MustNewReaktor(id string, opt ...ReaktorOpt) Reaktor {
-	r, err := NewReaktor(id, opt...)
-	if err != nil {
-		panic(err)
+func NewReaktor(scopeCode, code string, inputEvent EventId, logic logic.Logic, opts ...ReaktorOpt) Reaktor {
+	result := &reaktor{
+		ScopeCode:    scopeCode,
+		entity:       newEntity(fmt.Sprintf("%s:%s", scopeCode, code), code),
+		inputEvent:   inputEvent,
+		outputEvents: []EventId{},
+		stores:       []Store{},
+		logic:        logic,
 	}
 
-	return *r
+	for _, opt := range opts {
+		opt(result)
+	}
+
+	return result
 }
 
-func NewReaktor(id string, opt ...ReaktorOpt) (*Reaktor, error) {
-	r := &Reaktor{
-		Id: id,
-	}
-
-	for _, o := range opt {
-		o(r)
-	}
-
-	if r.Handler == nil {
-		return nil, errors.New("reaktor must have a handler")
-	}
-
-	if len(r.Listen) == 0 {
-		return nil, errors.New("reaktor must listen for at least one event kind")
-	}
-
-	return r, nil
+type reaktor struct {
+	ScopeCode string
+	*entity
+	inputEvent   EventId
+	outputEvents []EventId
+	logic        logic.Logic
+	stores       []Store
 }
 
-type ReaktorOpt func(r *Reaktor)
-
-func ListenFor(events ...*EventMeta) ReaktorOpt {
-	return func(r *Reaktor) {
-		r.Listen = events
-	}
+func (r *reaktor) InputEvent() EventId {
+	return r.inputEvent
 }
 
-func WithHandler(handler ReaktorFunc) ReaktorOpt {
-	return func(r *Reaktor) {
-		r.Handler = handler
-	}
+func (r *reaktor) OutputEvents() []EventId {
+	return r.outputEvents
 }
 
-type Reaktor struct {
-	Id      string
-	Listen  []*EventMeta
-	Handler ReaktorFunc
+func (r *reaktor) Logic() logic.Logic {
+	return r.logic
+}
+
+func (r *reaktor) Stores() []Store {
+	return r.stores
 }
