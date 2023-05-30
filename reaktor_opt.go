@@ -8,7 +8,7 @@ func WithName(name string) ReaktorOpt {
 	}
 }
 
-func WithDescription(description string) ReaktorOpt {
+func WithReaktorDescription(description string) ReaktorOpt {
 	return func(reaktor *reaktor) {
 		reaktor.entity.description = description
 	}
