@@ -3,6 +3,7 @@ package shono
 import (
 	"context"
 	"errors"
+	_ "github.com/benthosdev/benthos/v4/public/components/all"
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"

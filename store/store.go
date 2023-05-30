@@ -1,22 +1,50 @@
 package store
 
-import "context"
+import "fmt"
 
-type PersistMode string
-
-var (
-	CreatePersistMode  PersistMode = "create"
-	ReplacePersistMode PersistMode = "replace"
-	PatchPersistMode   PersistMode = "patch"
-)
-
-type State interface {
-	Key() string
+type store struct {
+	conceptCode string
+	code        string
+	name        string
+	description string
 }
 
-type Store[T State] interface {
-	List(ctx context.Context, filters map[string]interface{}, offset uint, size uint) ([]T, int64, error)
-	Get(ctx context.Context, key string) (*T, error)
-	Remove(ctx context.Context, key string) error
-	Persist(ctx context.Context, state T, mode PersistMode) error
+func (e *store) ConceptCode() string {
+	if e == nil {
+		return ""
+	}
+
+	return e.conceptCode
+}
+
+func (e *store) FQN() string {
+	if e == nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%s:%s", e.conceptCode, e.code)
+}
+
+func (e *store) Code() string {
+	if e == nil {
+		return ""
+	}
+
+	return e.code
+}
+
+func (e *store) Name() string {
+	if e == nil {
+		return ""
+	}
+
+	return e.name
+}
+
+func (e *store) Description() string {
+	if e == nil {
+		return ""
+	}
+
+	return e.description
 }

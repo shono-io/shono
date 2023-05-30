@@ -1,4 +1,4 @@
-module github.com/shono-io/go-shono
+module github.com/shono-io/shono
 
 go 1.20
 

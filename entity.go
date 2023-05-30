@@ -2,9 +2,9 @@ package shono
 
 type Entity interface {
 	FQN() string
-	GetCode() string
-	GetName() string
-	GetDescription() string
+	Code() string
+	Name() string
+	Description() string
 }
 
 func NewEntity(fqn, code, name, description string) Entity {
@@ -13,6 +13,14 @@ func NewEntity(fqn, code, name, description string) Entity {
 		code:        code,
 		name:        name,
 		description: description,
+	}
+}
+
+func newEntity(fqn, code string) *entity {
+	return &entity{
+		fqn:  fqn,
+		code: code,
+		name: code,
 	}
 }
 
@@ -31,7 +39,7 @@ func (e *entity) FQN() string {
 	return e.fqn
 }
 
-func (e *entity) GetCode() string {
+func (e *entity) Code() string {
 	if e == nil {
 		return ""
 	}
@@ -39,7 +47,7 @@ func (e *entity) GetCode() string {
 	return e.code
 }
 
-func (e *entity) GetName() string {
+func (e *entity) Name() string {
 	if e == nil {
 		return ""
 	}
@@ -47,7 +55,7 @@ func (e *entity) GetName() string {
 	return e.name
 }
 
-func (e *entity) GetDescription() string {
+func (e *entity) Description() string {
 	if e == nil {
 		return ""
 	}
