@@ -129,7 +129,7 @@ func registerCaches(b *service.StreamBuilder, reaktors []shono.Reaktor) error {
 	stores := map[string]shono.Store{}
 	for _, reaktor := range reaktors {
 		for _, store := range reaktor.Stores() {
-			stores[store.FQN()] = store
+			stores[store.Key().String()] = store
 		}
 	}
 
@@ -137,18 +137,18 @@ func registerCaches(b *service.StreamBuilder, reaktors []shono.Reaktor) error {
 	for _, store := range stores {
 		yml, err := store.AsBenthosComponent()
 		if err != nil {
-			return fmt.Errorf("failed to convert store %q to yaml: %w", store.FQN(), err)
+			return fmt.Errorf("failed to convert store %q to yaml: %w", store.Key().String(), err)
 		}
 
 		yb, err := yaml.Marshal(yml)
 		if err != nil {
-			return fmt.Errorf("failed to marshal yaml for store %q: %w", store.FQN(), err)
+			return fmt.Errorf("failed to marshal yaml for store %q: %w", store.Key().String(), err)
 		}
 
 		logrus.Tracef("registering cache %s", string(yb))
 
 		if err := b.AddCacheYAML(string(yb)); err != nil {
-			return fmt.Errorf("failed to register cache %q: %w", store.FQN(), err)
+			return fmt.Errorf("failed to register cache %q: %w", store.Key().String(), err)
 		}
 	}
 

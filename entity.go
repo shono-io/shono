@@ -1,50 +1,38 @@
 package shono
 
 type Entity interface {
-	FQN() string
-	Code() string
+	Key() Key
 	Name() string
 	Description() string
 }
 
-func NewEntity(fqn, code, name, description string) Entity {
+func NewEntity(key Key, name, description string) Entity {
 	return &entity{
-		fqn:         fqn,
-		code:        code,
+		key:         key,
 		name:        name,
 		description: description,
 	}
 }
 
-func newEntity(fqn, code string) *entity {
+func newEntity(key Key) *entity {
 	return &entity{
-		fqn:  fqn,
-		code: code,
-		name: code,
+		key:  key,
+		name: key.Code(),
 	}
 }
 
 type entity struct {
-	fqn         string
-	code        string
+	key         Key
 	name        string
 	description string
 }
 
-func (e *entity) FQN() string {
+func (e *entity) Key() Key {
 	if e == nil {
-		return ""
+		return nil
 	}
 
-	return e.fqn
-}
-
-func (e *entity) Code() string {
-	if e == nil {
-		return ""
-	}
-
-	return e.code
+	return e.key
 }
 
 func (e *entity) Name() string {

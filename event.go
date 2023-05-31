@@ -1,9 +1,5 @@
 package shono
 
-import (
-	"fmt"
-)
-
 type Event interface {
 	Entity
 	Id() EventId
@@ -23,11 +19,9 @@ func WithEventDescription(description string) EventOpt {
 	}
 }
 
-func NewEvent(scopeCode, conceptCode, code string, opts ...EventOpt) Event {
+func NewEvent(conceptKey Key, code string, opts ...EventOpt) Event {
 	result := &event{
-		newEntity(fmt.Sprintf("%s:%s:%s", scopeCode, conceptCode, code), code),
-		scopeCode,
-		conceptCode,
+		newEntity(conceptKey.Child("event", code)),
 	}
 
 	for _, opt := range opts {
@@ -39,8 +33,6 @@ func NewEvent(scopeCode, conceptCode, code string, opts ...EventOpt) Event {
 
 type event struct {
 	*entity
-	scopeCode   string
-	conceptCode string
 }
 
 func (e *event) Id() EventId {
@@ -48,5 +40,5 @@ func (e *event) Id() EventId {
 		return ""
 	}
 
-	return EventId(e.FQN())
+	return EventId(e.Key().String())
 }

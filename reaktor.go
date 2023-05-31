@@ -1,7 +1,6 @@
 package shono
 
 import (
-	"fmt"
 	"github.com/shono-io/shono/logic"
 )
 
@@ -15,10 +14,9 @@ type Reaktor interface {
 	Stores() []Store
 }
 
-func NewReaktor(scopeCode, code string, inputEvent EventId, logic logic.Logic, opts ...ReaktorOpt) Reaktor {
+func NewReaktor(scopeKey Key, code string, inputEvent EventId, logic logic.Logic, opts ...ReaktorOpt) Reaktor {
 	result := &reaktor{
-		ScopeCode:    scopeCode,
-		entity:       newEntity(fmt.Sprintf("%s:%s", scopeCode, code), code),
+		entity:       newEntity(scopeKey.Child("reaktor", code)),
 		inputEvent:   inputEvent,
 		outputEvents: []EventId{},
 		stores:       []Store{},
@@ -33,7 +31,6 @@ func NewReaktor(scopeCode, code string, inputEvent EventId, logic logic.Logic, o
 }
 
 type reaktor struct {
-	ScopeCode string
 	*entity
 	inputEvent   EventId
 	outputEvents []EventId

@@ -2,12 +2,14 @@ package shono
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Concept interface {
 	Entity
-	ScopeCode() string
 	Event(code string, opts ...EventOpt) Event
+	Plural() string
+	Single() string
 }
 
 type ConceptOpt func(*concept)
@@ -24,10 +26,23 @@ func WithConceptDescription(description string) ConceptOpt {
 	}
 }
 
-func NewConcept(scopeCode, code string, opts ...ConceptOpt) Concept {
+func WithConceptPluralName(plural string) ConceptOpt {
+	return func(c *concept) {
+		c.plural = plural
+	}
+}
+
+func WithConceptSingleName(single string) ConceptOpt {
+	return func(c *concept) {
+		c.single = single
+	}
+}
+
+func NewConcept(scopeKey Key, code string, opts ...ConceptOpt) Concept {
 	result := &concept{
-		scopeCode,
-		newEntity(fmt.Sprintf("%s:%s", scopeCode, code), code),
+		newEntity(scopeKey.Child("concept", code)),
+		fmt.Sprintf("%ss", strings.ToTitle(code)),
+		strings.ToTitle(code),
 	}
 
 	for _, opt := range opts {
@@ -38,14 +53,19 @@ func NewConcept(scopeCode, code string, opts ...ConceptOpt) Concept {
 }
 
 type concept struct {
-	scopeCode string
 	*entity
-}
-
-func (c *concept) ScopeCode() string {
-	return c.scopeCode
+	plural string
+	single string
 }
 
 func (c *concept) Event(code string, opts ...EventOpt) Event {
-	return NewEvent(c.scopeCode, c.Code(), code, opts...)
+	return NewEvent(c.Key(), code, opts...)
+}
+
+func (c *concept) Plural() string {
+	return c.plural
+}
+
+func (c *concept) Single() string {
+	return c.single
 }

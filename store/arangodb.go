@@ -1,15 +1,21 @@
 package store
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+	"github.com/arangodb/go-driver"
+	"github.com/shono-io/shono"
+	"net/http"
+	"strings"
+)
 
 import _ "github.com/shono-io/shono/benthos"
 
-func NewArangodbStore(scopeCode, conceptCode, code, url, database, collection, username, password string) *ArangodbStore {
+func NewArangodbStore(concept shono.Concept, code, url, database, collection, username, password string) *ArangodbStore {
 	return &ArangodbStore{
 		store: &store{
-			scopeCode:   scopeCode,
-			conceptCode: conceptCode,
-			code:        code,
+			concept:     concept,
+			key:         concept.Key().Child("store", code),
 			name:        fmt.Sprintf("%s Arangodb Store", code),
 			description: fmt.Sprintf("%s items are stored within an arangodb store inside the %q database and %q collection", code, database, collection),
 		},
@@ -31,6 +37,17 @@ type ArangodbStore struct {
 	collection string
 }
 
+func (s *ArangodbStore) Operations() map[shono.StoreOpertationId]shono.StoreOperation {
+	return map[shono.StoreOpertationId]shono.StoreOperation{
+		shono.ExistsOperation: newStoreOperation(shono.ExistsOperation,
+			fmt.Sprintf("%sExists", strings.ToTitle(s.concept.Key().Code())),
+			fmt.Sprintf("%s Exists", strings.ToTitle(s.concept.Key().Code())),
+			fmt.Sprintf("Checks if %s exists", strings.ToTitle(s.concept.Key().Code())),
+			false,
+			nil),
+	}
+}
+
 func (s *ArangodbStore) AsBenthosComponent() (map[string]interface{}, error) {
 	acfg := map[string]interface{}{
 		"urls":       s.urls,
@@ -41,8 +58,27 @@ func (s *ArangodbStore) AsBenthosComponent() (map[string]interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		"label":    s.code,
+		"label":    s.Key().Code(),
 		"arangodb": acfg,
 	}, nil
+}
 
+type arangodbClient struct {
+	client     driver.Client
+	db         driver.Database
+	collection driver.Collection
+}
+
+func (c *arangodbClient) exists(ctx context.Context, request shono.StoreOperationRequest) shono.StoreOperationResponse {
+	adbKey := keyToArangodbKey(request.Key())
+	b, err := c.collection.DocumentExists(ctx, adbKey)
+	if err != nil {
+		return newResponse(http.StatusInternalServerError, err)
+	}
+
+	return newResponse(http.StatusOK, b)
+}
+
+func keyToArangodbKey(key shono.Key) string {
+	return strings.ReplaceAll(key.String(), ":", "_")
 }
