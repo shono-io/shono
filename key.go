@@ -46,7 +46,19 @@ func (k Key) String() string {
 
 	var s string
 	for _, section := range k {
-		s += section.Code + ":"
+		s += section.Kind + "_" + section.Code + ":"
 	}
 	return s[:len(s)-1]
+}
+
+func (k Key) CodeString() string {
+	if len(k) == 0 {
+		return ""
+	}
+
+	var s string
+	for _, section := range k {
+		s += section.Code + "__"
+	}
+	return s[:len(s)-2]
 }

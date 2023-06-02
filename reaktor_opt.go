@@ -4,13 +4,13 @@ type ReaktorOpt func(reaktor *reaktor)
 
 func WithName(name string) ReaktorOpt {
 	return func(reaktor *reaktor) {
-		reaktor.entity.name = name
+		reaktor.name = name
 	}
 }
 
 func WithReaktorDescription(description string) ReaktorOpt {
 	return func(reaktor *reaktor) {
-		reaktor.entity.description = description
+		reaktor.description = description
 	}
 }
 

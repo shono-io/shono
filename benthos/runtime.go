@@ -7,7 +7,6 @@ import (
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/rs/xid"
 	"github.com/shono-io/shono"
-	"github.com/sirupsen/logrus"
 )
 
 type Opt func(*Runtime)
@@ -88,33 +87,33 @@ func (r *Runtime) validate() error {
 	return nil
 }
 
-func (r *Runtime) Run(ctx context.Context) (err error) {
-	builder, err := NewBuilder(r.id, r.bb, r.reaktors)
-	if err != nil {
-		return err
-	}
-
-	// -- set the logger
-	if r.logger != nil {
-		builder.SetPrintLogger(r.logger)
-	}
-
-	// -- set the number of threads
-	if r.threads > 0 {
-		builder.SetThreads(r.threads)
-	}
-
-	yml, _ := builder.AsYAML()
-	logrus.Debugf("Benthos stream:\n%s", yml)
-
-	r.stream, err = builder.Build()
-	if err != nil {
-		return err
-	}
-
-	// -- run the stream
-	return r.stream.Run(ctx)
-}
+//func (r *Runtime) Run(ctx context.Context) (err error) {
+//	builder, err := NewGenerator(r.id, r.bb, r.reaktors)
+//	if err != nil {
+//		return err
+//	}
+//
+//	// -- set the logger
+//	if r.logger != nil {
+//		builder.SetPrintLogger(r.logger)
+//	}
+//
+//	// -- set the number of threads
+//	if r.threads > 0 {
+//		builder.SetThreads(r.threads)
+//	}
+//
+//	yml, _ := builder.AsYAML()
+//	logrus.Debugf("Benthos stream:\n%s", yml)
+//
+//	r.stream, err = builder.Build()
+//	if err != nil {
+//		return err
+//	}
+//
+//	// -- run the stream
+//	return r.stream.Run(ctx)
+//}
 
 func (r *Runtime) Close() error {
 	if r.stream != nil {

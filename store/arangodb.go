@@ -9,11 +9,9 @@ import (
 	"strings"
 )
 
-import _ "github.com/shono-io/shono/benthos"
-
 func NewArangodbStore(concept shono.Concept, code, url, database, collection, username, password string) *ArangodbStore {
 	return &ArangodbStore{
-		store: &store{
+		store: store{
 			concept:     concept,
 			key:         concept.Key().Child("store", code),
 			name:        fmt.Sprintf("%s Arangodb Store", code),
@@ -28,7 +26,7 @@ func NewArangodbStore(concept shono.Concept, code, url, database, collection, us
 }
 
 type ArangodbStore struct {
-	*store
+	store
 
 	urls       []string
 	username   string
@@ -61,6 +59,22 @@ func (s *ArangodbStore) AsBenthosComponent() (map[string]interface{}, error) {
 		"label":    s.Key().Code(),
 		"arangodb": acfg,
 	}, nil
+}
+
+func (s *ArangodbStore) Urls() []string {
+	return s.urls
+}
+
+func (s *ArangodbStore) Credentials() (string, string) {
+	return s.username, s.password
+}
+
+func (s *ArangodbStore) Database() string {
+	return s.database
+}
+
+func (s *ArangodbStore) Collection() string {
+	return s.collection
 }
 
 type arangodbClient struct {

@@ -5,9 +5,7 @@ import "context"
 type Store interface {
 	Entity
 
-	AsBenthosComponent() (map[string]any, error)
-
-	Operations() map[StoreOpertationId]StoreOperation
+	//Operations() map[StoreOpertationId]StoreOperation
 }
 
 type StoreOpertationId string

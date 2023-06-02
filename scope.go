@@ -6,11 +6,14 @@ type Scope interface {
 	Entity
 	NewConcept(code string, opts ...ConceptOpt) Concept
 	NewReaktor(code string, inputEvent EventId, logic logic.Logic, opts ...ReaktorOpt) Reaktor
+
+	Reaktors() []Reaktor
 }
 
 func NewScope(code string, opts ...ScopeOpt) Scope {
 	result := &scope{
 		newEntity(NewKey("scope", code)),
+		map[string]Reaktor{},
 	}
 
 	for _, opt := range opts {
@@ -36,6 +39,7 @@ func WithScopeDescription(description string) ScopeOpt {
 
 type scope struct {
 	*entity
+	reaktors map[string]Reaktor
 }
 
 func (s *scope) NewConcept(code string, opts ...ConceptOpt) Concept {
@@ -43,5 +47,19 @@ func (s *scope) NewConcept(code string, opts ...ConceptOpt) Concept {
 }
 
 func (s *scope) NewReaktor(code string, inputEvent EventId, logic logic.Logic, opts ...ReaktorOpt) Reaktor {
-	return NewReaktor(s.Key(), code, inputEvent, logic, opts...)
+	result := NewReaktor(s.Key(), code, inputEvent, logic, opts...)
+
+	s.reaktors[result.Key().String()] = result
+
+	return result
+}
+
+func (s *scope) Reaktors() []Reaktor {
+	var result []Reaktor
+
+	for _, reaktor := range s.reaktors {
+		result = append(result, reaktor)
+	}
+
+	return result
 }
