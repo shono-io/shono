@@ -100,12 +100,12 @@ func (e *TechnicalError) Error() string {
 	return e.err.Error()
 }
 
-//func PoisonPill(evt *event.Event, err error) error {
+//func PoisonPill(evt *event.NewEvent, err error) error {
 //	return &PoisonPillError{evt, err}
 //}
 //
 //type PoisonPillError struct {
-//	evt *event.Event
+//	evt *event.NewEvent
 //	err error
 //}
 //

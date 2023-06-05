@@ -1,4 +1,4 @@
-package shono
+package graph
 
 type Entity interface {
 	Key() Key
