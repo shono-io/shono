@@ -1,5 +1,7 @@
 package graph
 
+import "github.com/shono-io/shono/commons"
+
 type StorageOpt func(*Storage)
 
 func WithStorageName(name string) StorageOpt {
@@ -14,7 +16,7 @@ func WithStorageDescription(description string) StorageOpt {
 	}
 }
 
-func NewStorage(key Key, kind string, config map[string]any, opts ...StorageOpt) (*Storage, error) {
+func NewStorage(key commons.Key, kind string, config map[string]any, opts ...StorageOpt) (*Storage, error) {
 	result := &Storage{
 		key:    key,
 		name:   key.Code(),
@@ -30,14 +32,14 @@ func NewStorage(key Key, kind string, config map[string]any, opts ...StorageOpt)
 }
 
 type Storage struct {
-	key         Key
+	key         commons.Key
 	name        string
 	description string
 	kind        string
 	config      map[string]any
 }
 
-func (s Storage) Key() Key {
+func (s Storage) Key() commons.Key {
 	return s.key
 }
 

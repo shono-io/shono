@@ -1,7 +1,7 @@
 package backbone
 
 import (
-	"github.com/shono-io/shono/graph"
+	"github.com/shono-io/shono/commons"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,8 +12,8 @@ var (
 )
 
 type Backbone interface {
-	GetConsumerConfig(id string, events []graph.Key) (map[string]any, error)
-	GetProducerConfig(events []graph.Key) (map[string]any, error)
+	GetConsumerConfig(id string, events []commons.Key) (map[string]any, error)
+	GetProducerConfig(events []commons.Key) (map[string]any, error)
 }
 
 func NewKafkaBackbone(config map[string]any, logStrategy LogStrategy) Backbone {
@@ -28,7 +28,7 @@ type kafkaBackbone struct {
 	logStrategy LogStrategy
 }
 
-func (k *kafkaBackbone) GetConsumerConfig(id string, events []graph.Key) (map[string]any, error) {
+func (k *kafkaBackbone) GetConsumerConfig(id string, events []commons.Key) (map[string]any, error) {
 	result := map[string]any{
 		"topics":         topicsFromEventIds(events, k.logStrategy),
 		"consumer_group": id,
@@ -42,7 +42,7 @@ func (k *kafkaBackbone) GetConsumerConfig(id string, events []graph.Key) (map[st
 	}, nil
 }
 
-func (k *kafkaBackbone) GetProducerConfig(events []graph.Key) (map[string]any, error) {
+func (k *kafkaBackbone) GetProducerConfig(events []commons.Key) (map[string]any, error) {
 	var checks []map[string]any
 	for _, t := range topicsFromEventIds(events, k.logStrategy) {
 		check := map[string]any{
@@ -81,7 +81,7 @@ func topicOutput(config map[string]any, topic string) map[string]any {
 	}
 }
 
-func topicsFromEventIds(eventIds []graph.Key, strategy LogStrategy) []string {
+func topicsFromEventIds(eventIds []commons.Key, strategy LogStrategy) []string {
 	topics := map[string]bool{}
 	for _, v := range eventIds {
 		switch strategy {

@@ -1,5 +1,7 @@
 package graph
 
+import "github.com/shono-io/shono/commons"
+
 // == ENTITY ==========================================================================================================
 
 type ReaktorOpt func(reaktor *Reaktor)
@@ -16,7 +18,7 @@ func WithReaktorDescription(description string) ReaktorOpt {
 	}
 }
 
-func WithOutputEvent(outputEventKeys ...Key) ReaktorOpt {
+func WithOutputEvent(outputEventKeys ...commons.Key) ReaktorOpt {
 	return func(reaktor *Reaktor) {
 		reaktor.outputEventKeys = append(reaktor.outputEventKeys, outputEventKeys...)
 	}
@@ -40,7 +42,7 @@ func WithTest(tests ...ReaktorTest) ReaktorOpt {
 	}
 }
 
-func NewReaktor(key Key, inputEvent Key, opts ...ReaktorOpt) Reaktor {
+func NewReaktor(key commons.Key, inputEvent commons.Key, opts ...ReaktorOpt) Reaktor {
 	result := Reaktor{
 		key:           key,
 		name:          key.Code(),
@@ -55,17 +57,17 @@ func NewReaktor(key Key, inputEvent Key, opts ...ReaktorOpt) Reaktor {
 }
 
 type Reaktor struct {
-	key             Key
+	key             commons.Key
 	name            string
 	description     string
-	inputEventKey   Key
-	outputEventKeys []Key
+	inputEventKey   commons.Key
+	outputEventKeys []commons.Key
 	stores          []Store
 	logic           []Logic
 	tests           []ReaktorTest
 }
 
-func (r Reaktor) Key() Key {
+func (r Reaktor) Key() commons.Key {
 	return r.key
 }
 
@@ -77,11 +79,11 @@ func (r Reaktor) Description() string {
 	return r.description
 }
 
-func (r Reaktor) InputEventKey() Key {
+func (r Reaktor) InputEventKey() commons.Key {
 	return r.inputEventKey
 }
 
-func (r Reaktor) OutputEventKeys() []Key {
+func (r Reaktor) OutputEventKeys() []commons.Key {
 	return r.outputEventKeys
 }
 

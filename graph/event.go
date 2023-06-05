@@ -1,5 +1,7 @@
 package graph
 
+import "github.com/shono-io/shono/commons"
+
 type EventOpt func(*Event)
 
 func WithEventName(name string) EventOpt {
@@ -14,7 +16,7 @@ func WithEventDescription(description string) EventOpt {
 	}
 }
 
-func NewEvent(key Key, opts ...EventOpt) Event {
+func NewEvent(key commons.Key, opts ...EventOpt) Event {
 	result := Event{
 		key:  key,
 		name: key.Code(),
@@ -28,12 +30,12 @@ func NewEvent(key Key, opts ...EventOpt) Event {
 }
 
 type Event struct {
-	key         Key
+	key         commons.Key
 	name        string
 	description string
 }
 
-func (e Event) Key() Key {
+func (e Event) Key() commons.Key {
 	return e.key
 }
 

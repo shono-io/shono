@@ -1,6 +1,9 @@
 package graph
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/shono-io/shono/commons"
+)
 
 type ConceptOpt func(*Concept)
 
@@ -28,7 +31,7 @@ func WithConceptSingleName(single string) ConceptOpt {
 	}
 }
 
-func NewConcept(key Key, opts ...ConceptOpt) Concept {
+func NewConcept(key commons.Key, opts ...ConceptOpt) Concept {
 	result := Concept{
 		key.Parent(),
 		key,
@@ -46,15 +49,15 @@ func NewConcept(key Key, opts ...ConceptOpt) Concept {
 }
 
 type Concept struct {
-	scopeKey    Key
-	key         Key
+	scopeKey    commons.Key
+	key         commons.Key
 	name        string
 	description string
 	plural      string
 	single      string
 }
 
-func (c Concept) Key() Key {
+func (c Concept) Key() commons.Key {
 	return c.key
 }
 
@@ -66,7 +69,7 @@ func (c Concept) Description() string {
 	return c.description
 }
 
-func (c Concept) ScopeKey() Key {
+func (c Concept) ScopeKey() commons.Key {
 	return c.scopeKey
 }
 

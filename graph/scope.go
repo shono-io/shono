@@ -1,5 +1,7 @@
 package graph
 
+import "github.com/shono-io/shono/commons"
+
 type ScopeOpt func(s *Scope)
 
 func WithScopeName(name string) ScopeOpt {
@@ -14,7 +16,7 @@ func WithScopeDescription(description string) ScopeOpt {
 	}
 }
 
-func NewScope(key Key, opts ...ScopeOpt) Scope {
+func NewScope(key commons.Key, opts ...ScopeOpt) Scope {
 	result := Scope{
 		key,
 		key.Code(),
@@ -29,12 +31,12 @@ func NewScope(key Key, opts ...ScopeOpt) Scope {
 }
 
 type Scope struct {
-	key         Key
+	key         commons.Key
 	name        string
 	description string
 }
 
-func (s Scope) Key() Key {
+func (s Scope) Key() commons.Key {
 	return s.key
 }
 

@@ -1,27 +1,34 @@
 package graph
 
+import (
+	"github.com/shono-io/shono/backbone"
+	"github.com/shono-io/shono/commons"
+)
+
 type Environment interface {
-	GetScope(scopeKey Key) (*Scope, error)
+	GetBackbone() (backbone.Backbone, error)
+
+	GetScope(scopeKey commons.Key) (*Scope, error)
 	RegisterScope(scope Scope) error
 	ListScopes() ([]Scope, error)
 
-	GetConcept(conceptKey Key) (*Concept, error)
+	GetConcept(conceptKey commons.Key) (*Concept, error)
 	RegisterConcept(concept Concept) error
-	ListConceptsForScope(scopeKey Key) ([]Concept, error)
+	ListConceptsForScope(scopeKey commons.Key) ([]Concept, error)
 
-	GetEvent(eventKey Key) (*Event, error)
+	GetEvent(eventKey commons.Key) (*Event, error)
 	RegisterEvent(event ...Event) error
-	ListEventsForConcept(conceptKey Key) ([]Event, error)
+	ListEventsForConcept(conceptKey commons.Key) ([]Event, error)
 
-	GetReaktor(reaktorKey Key) (*Reaktor, error)
+	GetReaktor(reaktorKey commons.Key) (*Reaktor, error)
 	RegisterReaktor(reaktor ...Reaktor) error
-	ListReaktorsForConcept(conceptKey Key) ([]Reaktor, error)
+	ListReaktorsForConcept(conceptKey commons.Key) ([]Reaktor, error)
 
-	GetStorage(storageKey Key) (*Storage, error)
+	GetStorage(storageKey commons.Key) (*Storage, error)
 	RegisterStorage(storage Storage) error
 	ListStorages() ([]Storage, error)
 
-	GetStore(storeKey Key) (*Store, error)
+	GetStore(storeKey commons.Key) (*Store, error)
 	RegisterStore(store Store) error
-	ListStoresForStorage(storageKey Key) ([]Store, error)
+	ListStoresForStorage(storageKey commons.Key) ([]Store, error)
 }

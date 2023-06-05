@@ -1,4 +1,4 @@
-package graph
+package commons
 
 type KeySection struct {
 	Kind string

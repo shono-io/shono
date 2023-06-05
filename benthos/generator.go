@@ -3,12 +3,11 @@ package benthos
 import (
 	"context"
 	"fmt"
-	"github.com/shono-io/shono/backbone"
 	"github.com/shono-io/shono/graph"
 	"gopkg.in/yaml.v3"
+	"io/fs"
 	"os"
 	"runtime/debug"
-	"strings"
 )
 
 type GeneratorOpt func(g *Generator)
@@ -19,29 +18,21 @@ func WithThreads(threads int) GeneratorOpt {
 	}
 }
 
-func WithOutputDir(dir string) GeneratorOpt {
-	return func(g *Generator) {
-		g.outputDir = dir
-	}
-}
-
 func WithGroup(group string) GeneratorOpt {
 	return func(g *Generator) {
 		g.group = group
 	}
 }
 
-func NewGenerator(bb backbone.Backbone, opts ...GeneratorOpt) *Generator {
+func NewGenerator(opts ...GeneratorOpt) *Generator {
 	bi, ok := debug.ReadBuildInfo()
 	if !ok {
 		panic("failed to read build info; maybe your project is not a go module?")
 	}
 
 	res := &Generator{
-		group:     bi.Path,
-		bb:        bb,
-		threads:   1,
-		outputDir: "generated_output",
+		group:   bi.Path,
+		threads: 1,
 	}
 
 	for _, opt := range opts {
@@ -52,36 +43,27 @@ func NewGenerator(bb backbone.Backbone, opts ...GeneratorOpt) *Generator {
 }
 
 type Generator struct {
-	group     string
-	bb        backbone.Backbone
-	outputDir string
-	threads   int
+	group   string
+	threads int
 }
 
-func (g *Generator) Generate(ctx context.Context, env graph.Environment) (err error) {
-	// -- create the output directory
-	if _, err := os.Stat(g.outputDir); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(g.outputDir, 0755); err != nil {
-				return fmt.Errorf("failed to create output directory: %w", err)
-			}
-		}
+func (g *Generator) Generate(ctx context.Context, env graph.Environment) (output *GeneratorOutput, err error) {
+	output = &GeneratorOutput{
+		Streams: make([]Stream, 0),
 	}
-
-	output := &GeneratorOutput{g.outputDir}
 
 	// -- list through the scopes within the environment, generating each of them
 	scopes, err := env.ListScopes()
 	if err != nil {
-		return fmt.Errorf("failed to list scopes: %w", err)
+		return nil, fmt.Errorf("failed to list scopes: %w", err)
 	}
 	for _, scope := range scopes {
 		if err := g.generateScope(ctx, output, env, scope); err != nil {
-			return fmt.Errorf("failed to generate scope: %w", err)
+			return nil, fmt.Errorf("failed to generate scope: %w", err)
 		}
 	}
 
-	return nil
+	return output, nil
 }
 
 func (g *Generator) generateScope(ctx context.Context, out *GeneratorOutput, env graph.Environment, scope graph.Scope) (err error) {
@@ -126,24 +108,51 @@ func (g *Generator) generateConcept(ctx context.Context, out *GeneratorOutput, e
 		return fmt.Errorf("failed to generate tests: %w", err)
 	}
 
-	return out.Write(fmt.Sprintf("%s-%s.yaml", scope.Key().Code(), concept.Key().Code()), result)
+	out.RegisterUnit(concept, result)
+
+	return nil
+}
+
+type Stream struct {
+	Concept graph.Concept
+	Unit    map[string]any
+}
+
+func (s *Stream) Dump(dir string) error {
+	filename := fmt.Sprintf("%s.yaml", s.Concept.Key().CodeString())
+
+	b, err := yaml.Marshal(s.Unit)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(fmt.Sprintf("%s/%s", dir, filename), b, 0644)
 }
 
 type GeneratorOutput struct {
-	workDir string
+	Streams []Stream
 }
 
-func (g *GeneratorOutput) Write(path string, data map[string]any) (err error) {
-	if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
-		return fmt.Errorf("path must end with .yml or .yaml")
+func (g *GeneratorOutput) RegisterUnit(concept graph.Concept, unit map[string]any) {
+	g.Streams = append(g.Streams, Stream{
+		Concept: concept,
+		Unit:    unit,
+	})
+}
+
+func (g *GeneratorOutput) Dump(dir string) error {
+	// -- make sure the directory exists
+	if _, err := os.Stat(dir); err == fs.ErrNotExist {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %q: %w", dir, err)
+		}
 	}
 
-	// -- generate the yaml based on the data
-	b, err := yaml.Marshal(data)
-	if err != nil {
-		return fmt.Errorf("failed to marshal yaml: %w", err)
+	for _, stream := range g.Streams {
+		if err := stream.Dump(dir); err != nil {
+			return fmt.Errorf("failed to dump stream: %w", err)
+		}
 	}
 
-	// -- create the output file
-	return os.WriteFile(fmt.Sprintf("%s/%s", g.workDir, path), b, 0644)
+	return nil
 }

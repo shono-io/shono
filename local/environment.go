@@ -1,11 +1,14 @@
 package local
 
 import (
+	"github.com/shono-io/shono/backbone"
+	"github.com/shono-io/shono/commons"
 	"github.com/shono-io/shono/graph"
 )
 
-func NewEnvironment() *Environment {
+func NewEnvironment(bb backbone.Backbone) *Environment {
 	return &Environment{
+		bb:       bb,
 		scopes:   make(map[string]graph.Scope),
 		concepts: make(map[string]graph.Concept),
 		events:   make(map[string]graph.Event),
@@ -16,6 +19,7 @@ func NewEnvironment() *Environment {
 }
 
 type Environment struct {
+	bb       backbone.Backbone
 	scopes   map[string]graph.Scope
 	concepts map[string]graph.Concept
 	events   map[string]graph.Event
@@ -24,7 +28,11 @@ type Environment struct {
 	stores   map[string]graph.Store
 }
 
-func (e *Environment) GetScope(scopeKey graph.Key) (*graph.Scope, error) {
+func (e *Environment) GetBackbone() (backbone.Backbone, error) {
+	return e.bb, nil
+}
+
+func (e *Environment) GetScope(scopeKey commons.Key) (*graph.Scope, error) {
 	res, fnd := e.scopes[scopeKey.String()]
 	if !fnd {
 		return nil, nil
@@ -46,7 +54,7 @@ func (e *Environment) ListScopes() ([]graph.Scope, error) {
 	return res, nil
 }
 
-func (e *Environment) GetConcept(conceptKey graph.Key) (*graph.Concept, error) {
+func (e *Environment) GetConcept(conceptKey commons.Key) (*graph.Concept, error) {
 	res, fnd := e.concepts[conceptKey.String()]
 	if !fnd {
 		return nil, nil
@@ -60,7 +68,7 @@ func (e *Environment) RegisterConcept(concept graph.Concept) error {
 	return nil
 }
 
-func (e *Environment) ListConceptsForScope(scopeKey graph.Key) ([]graph.Concept, error) {
+func (e *Environment) ListConceptsForScope(scopeKey commons.Key) ([]graph.Concept, error) {
 	var res []graph.Concept
 	for _, concept := range e.concepts {
 		res = append(res, concept)
@@ -69,7 +77,7 @@ func (e *Environment) ListConceptsForScope(scopeKey graph.Key) ([]graph.Concept,
 	return res, nil
 }
 
-func (e *Environment) GetEvent(eventKey graph.Key) (*graph.Event, error) {
+func (e *Environment) GetEvent(eventKey commons.Key) (*graph.Event, error) {
 	res, fnd := e.events[eventKey.String()]
 	if !fnd {
 		return nil, nil
@@ -85,7 +93,7 @@ func (e *Environment) RegisterEvent(event ...graph.Event) error {
 	return nil
 }
 
-func (e *Environment) ListEventsForConcept(conceptKey graph.Key) ([]graph.Event, error) {
+func (e *Environment) ListEventsForConcept(conceptKey commons.Key) ([]graph.Event, error) {
 	var res []graph.Event
 	for _, event := range e.events {
 		res = append(res, event)
@@ -94,7 +102,7 @@ func (e *Environment) ListEventsForConcept(conceptKey graph.Key) ([]graph.Event,
 	return res, nil
 }
 
-func (e *Environment) GetReaktor(reaktorKey graph.Key) (*graph.Reaktor, error) {
+func (e *Environment) GetReaktor(reaktorKey commons.Key) (*graph.Reaktor, error) {
 	res, fnd := e.reaktors[reaktorKey.String()]
 	if !fnd {
 		return nil, nil
@@ -110,7 +118,7 @@ func (e *Environment) RegisterReaktor(reaktor ...graph.Reaktor) error {
 	return nil
 }
 
-func (e *Environment) ListReaktorsForConcept(conceptKey graph.Key) ([]graph.Reaktor, error) {
+func (e *Environment) ListReaktorsForConcept(conceptKey commons.Key) ([]graph.Reaktor, error) {
 	var res []graph.Reaktor
 	for _, reaktor := range e.reaktors {
 		res = append(res, reaktor)
@@ -119,7 +127,7 @@ func (e *Environment) ListReaktorsForConcept(conceptKey graph.Key) ([]graph.Reak
 	return res, nil
 }
 
-func (e *Environment) GetStorage(storageKey graph.Key) (*graph.Storage, error) {
+func (e *Environment) GetStorage(storageKey commons.Key) (*graph.Storage, error) {
 	res, fnd := e.storages[storageKey.String()]
 	if !fnd {
 		return nil, nil
@@ -141,7 +149,7 @@ func (e *Environment) ListStorages() ([]graph.Storage, error) {
 	return res, nil
 }
 
-func (e *Environment) GetStore(storeKey graph.Key) (*graph.Store, error) {
+func (e *Environment) GetStore(storeKey commons.Key) (*graph.Store, error) {
 	res, fnd := e.stores[storeKey.String()]
 	if !fnd {
 		return nil, nil
@@ -154,7 +162,7 @@ func (e *Environment) RegisterStore(store graph.Store) error {
 	return nil
 }
 
-func (e *Environment) ListStoresForStorage(storageKey graph.Key) ([]graph.Store, error) {
+func (e *Environment) ListStoresForStorage(storageKey commons.Key) ([]graph.Store, error) {
 	var res []graph.Store
 	for _, store := range e.stores {
 		res = append(res, store)

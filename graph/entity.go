@@ -1,12 +1,14 @@
 package graph
 
+import "github.com/shono-io/shono/commons"
+
 type Entity interface {
-	Key() Key
+	Key() commons.Key
 	Name() string
 	Description() string
 }
 
-func NewEntity(key Key, name, description string) Entity {
+func NewEntity(key commons.Key, name, description string) Entity {
 	return &entity{
 		key:         key,
 		name:        name,
@@ -14,7 +16,7 @@ func NewEntity(key Key, name, description string) Entity {
 	}
 }
 
-func newEntity(key Key) *entity {
+func newEntity(key commons.Key) *entity {
 	return &entity{
 		key:  key,
 		name: key.Code(),
@@ -22,12 +24,12 @@ func newEntity(key Key) *entity {
 }
 
 type entity struct {
-	key         Key
+	key         commons.Key
 	name        string
 	description string
 }
 
-func (e *entity) Key() Key {
+func (e *entity) Key() commons.Key {
 	if e == nil {
 		return nil
 	}

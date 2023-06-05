@@ -1,6 +1,8 @@
 package graph
 
-func ListFromStore(storeKey Key, filters map[string]Expression) StoreLogic {
+import "github.com/shono-io/shono/commons"
+
+func ListFromStore(storeKey commons.Key, filters map[string]Expression) StoreLogic {
 	return StoreLogic{
 		StoreKey:  storeKey,
 		Operation: StoreOperationList,
@@ -8,15 +10,15 @@ func ListFromStore(storeKey Key, filters map[string]Expression) StoreLogic {
 	}
 }
 
-func GetFromStore(storeKey Key, key *Expression) StoreLogic {
+func GetFromStore(storeKey commons.Key, key Expression) StoreLogic {
 	return StoreLogic{
 		StoreKey:  storeKey,
 		Operation: StoreOperationGet,
-		Key:       key,
+		Key:       &key,
 	}
 }
 
-func AddToStore(storeKey Key, key Expression, value ...Mapping) StoreLogic {
+func AddToStore(storeKey commons.Key, key Expression, value ...Mapping) StoreLogic {
 	return StoreLogic{
 		StoreKey:  storeKey,
 		Operation: StoreOperationAdd,
@@ -25,7 +27,7 @@ func AddToStore(storeKey Key, key Expression, value ...Mapping) StoreLogic {
 	}
 }
 
-func SetInStore(storeKey Key, key Expression, value ...Mapping) StoreLogic {
+func SetInStore(storeKey commons.Key, key Expression, value ...Mapping) StoreLogic {
 	return StoreLogic{
 		StoreKey:  storeKey,
 		Operation: StoreOperationSet,
@@ -34,7 +36,7 @@ func SetInStore(storeKey Key, key Expression, value ...Mapping) StoreLogic {
 	}
 }
 
-func RemoveFromStore(storeKey Key, key Expression) StoreLogic {
+func RemoveFromStore(storeKey commons.Key, key Expression) StoreLogic {
 	return StoreLogic{
 		StoreKey:  storeKey,
 		Operation: StoreOperationDelete,
@@ -54,7 +56,7 @@ var (
 )
 
 type StoreLogic struct {
-	StoreKey  Key
+	StoreKey  commons.Key
 	Operation StoreOperation
 	Key       *Expression
 	Value     []Mapping
