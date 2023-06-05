@@ -281,7 +281,11 @@ func (a arangodbProc) getMessagePayload(message *service.Message) (map[string]an
 	switch data := sd.(type) {
 	case map[string]any:
 		// -- add the key to the payload
-		data["_key"] = a.key
+		key, err := a.key.TryString(message)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get the key from the message: %w", err)
+		}
+		data["_key"] = key
 
 		return data, nil
 	default:

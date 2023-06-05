@@ -166,6 +166,7 @@ func toProcessor(ctx context.Context, env graph.Environment, l graph.Logic) (map
 
 		result := storage.Config()
 		result["operation"] = lt.Operation
+		result["collection"] = store.Collection()
 
 		if lt.Key != nil {
 			result["key"] = lt.Key
