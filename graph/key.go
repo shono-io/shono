@@ -1,4 +1,4 @@
-package shono
+package graph
 
 type KeySection struct {
 	Kind string

@@ -1,7 +1,7 @@
 package benthos
 
 import (
-	"github.com/shono-io/shono"
+	"github.com/shono-io/shono/graph"
 	"testing"
 )
 
@@ -14,8 +14,8 @@ func Test_labelize(t *testing.T) {
 		args args
 		want string
 	}{
-		{"should convert simple keys", args{shono.NewKey("org", "one").String()}, "org_one"},
-		{"should convert simple keys", args{shono.NewKey("org", "one").Child("scope", "two").String()}, "org_one_scope_two"},
+		{"should convert simple keys", args{graph.NewKey("org", "one").String()}, "org_one"},
+		{"should convert simple keys", args{graph.NewKey("org", "one").Child("scope", "two").String()}, "org_one_scope_two"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

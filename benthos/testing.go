@@ -1,167 +1,96 @@
 package benthos
 
-import "github.com/shono-io/shono"
+import (
+	"context"
+	"fmt"
+	"github.com/shono-io/shono/graph"
+)
 
-type ReaktorTestOpt func(*reaktorTest)
+func (g *Generator) generateTests(ctx context.Context, result map[string]any, env graph.Environment, scope graph.Scope, concept graph.Concept, reaktors []graph.Reaktor) (err error) {
+	var tests []map[string]any
 
-func WithMock(name string, mock any) ReaktorTestOpt {
-	return func(t *reaktorTest) {
-		t.mocks[name] = mock
-	}
-}
+	for _, reaktor := range reaktors {
+		rt, err := generateTestsForReaktor(ctx, env, reaktor)
+		if err != nil {
+			return fmt.Errorf("failed to convert reaktor to test: %w", err)
+		}
 
-func WithEnvironment(key string, value any) ReaktorTestOpt {
-	return func(t *reaktorTest) {
-		t.environment[key] = value
-	}
-}
-
-func WithCondition(condition reaktorTestCondition) ReaktorTestOpt {
-	return func(t *reaktorTest) {
-		t.then = append(t.then, condition)
-	}
-}
-
-func NewReaktorTest(summary string, when *reaktorTestEvent, opts ...ReaktorTestOpt) shono.ReaktorTest {
-	result := &reaktorTest{
-		summary:     summary,
-		when:        when,
-		then:        []reaktorTestCondition{},
-		environment: map[string]any{},
-		mocks:       map[string]any{},
+		tests = append(tests, rt...)
 	}
 
-	for _, opt := range opts {
-		opt(result)
+	result["tests"] = tests
+	return nil
+}
+
+func generateTestsForReaktor(ctx context.Context, env graph.Environment, reaktor graph.Reaktor) (result []map[string]any, err error) {
+	for _, test := range reaktor.Tests() {
+		t, err := generateTest(ctx, test)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate test: %w", err)
+		}
+
+		result = append(result, t)
 	}
 
-	return result
+	return result, nil
 }
 
-type reaktorTest struct {
-	summary     string
-	environment map[string]any
-	mocks       map[string]any
-	when        *reaktorTestEvent
-	then        []reaktorTestCondition
-}
-
-func (r *reaktorTest) Summary() string {
-	return r.summary
-}
-
-func (r *reaktorTest) Environment() map[string]any {
-	return r.environment
-}
-
-func (r *reaktorTest) Mocks() map[string]any {
-	return r.mocks
-}
-
-func (r *reaktorTest) When() shono.ReaktorTestEvent {
-	return r.when
-}
-
-func (r *reaktorTest) Then() []shono.ReaktorTestCondition {
-	// FIXME: I hate doing this, there must be a better way
-	result := make([]shono.ReaktorTestCondition, len(r.then))
-	for i, condition := range r.then {
-		result[i] = condition
-	}
-	return result
-}
-
-func (r *reaktorTest) AsBenthos() map[string]any {
-	inputs := []map[string]any{
-		r.when.AsBenthos(),
+func generateTest(ctx context.Context, test graph.ReaktorTest) (result map[string]any, err error) {
+	if test.Event == nil {
+		return nil, fmt.Errorf("test event is nil")
 	}
 
-	outputs := []map[string]any{}
-	for _, condition := range r.then {
-		outputs = append(outputs, condition.AsBenthos())
+	var conditions []map[string]any
+	for _, condition := range test.Conditions {
+		condition, err := generateCondition(ctx, condition)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate condition: %w", err)
+		}
+
+		conditions = append(conditions, condition)
 	}
 
 	return map[string]any{
-		"name":        r.summary,
-		"environment": r.environment,
-		"mocks":       r.mocks,
-		"input_batch": inputs,
-		"output_batches": [][]map[string]any{
-			outputs,
+		"name":        test.Summary,
+		"environment": test.Environment,
+		"mocks":       test.Mocks,
+		"input_batch": []map[string]any{
+			{
+				"metadata":     test.Event.Metadata,
+				"json_content": test.Event.Content,
+			},
 		},
-	}
+		"output_batches": [][]map[string]any{
+			conditions,
+		},
+	}, nil
 }
 
-func WithStringContent(content string) ReaktorTestEventOpt {
-	return func(event *reaktorTestEvent) {
-		event.contentType = "content"
-		event.content = content
-	}
-}
+func generateCondition(ctx context.Context, condition graph.ReaktorTestCondition) (map[string]any, error) {
+	switch c := condition.(type) {
+	case graph.BloblangReaktorTestCondition:
+		return map[string]any{
+			"bloblang": c.Expression,
+		}, nil
+	case graph.MetadataReaktorTestCondition:
+		kind := "metadata_contains"
+		if c.Strict {
+			kind = "metadata_equals"
+		}
 
-func WithJsonContent(content map[string]any) ReaktorTestEventOpt {
-	return func(event *reaktorTestEvent) {
-		event.contentType = "json_content"
-		event.content = content
-	}
-}
+		return map[string]any{
+			kind: c.Values,
+		}, nil
+	case graph.PayloadReaktorTestCondition:
+		kind := "json_contains"
+		if c.Strict {
+			kind = "json_equals"
+		}
 
-func WithMetadata(key string, value any) ReaktorTestEventOpt {
-	return func(event *reaktorTestEvent) {
-		event.metadata[key] = value
-	}
-}
-
-type ReaktorTestEventOpt func(*reaktorTestEvent)
-
-func NewReaktorTestEvent(opts ...ReaktorTestEventOpt) shono.ReaktorTestEvent {
-	result := &reaktorTestEvent{
-		metadata: map[string]any{},
-	}
-
-	for _, opt := range opts {
-		opt(result)
-	}
-
-	return result
-}
-
-type reaktorTestEvent struct {
-	metadata    map[string]any
-	content     any
-	contentType string
-}
-
-func (r *reaktorTestEvent) Metadata() map[string]any {
-	return r.metadata
-}
-
-func (r *reaktorTestEvent) Content() any {
-	return r.content
-}
-
-func (r *reaktorTestEvent) AsBenthos() map[string]any {
-	return map[string]any{
-		"metadata":    r.metadata,
-		r.contentType: r.content,
-	}
-}
-
-type reaktorTestCondition struct {
-	kind      string
-	condition any
-}
-
-func (r reaktorTestCondition) Kind() string {
-	return r.kind
-}
-
-func (r reaktorTestCondition) Condition() any {
-	return r.condition
-}
-
-func (r reaktorTestCondition) AsBenthos() map[string]any {
-	return map[string]any{
-		r.kind: r.condition,
+		return map[string]any{
+			kind: c.Values,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown condition type: %T", c)
 	}
 }
