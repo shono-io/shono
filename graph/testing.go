@@ -35,7 +35,7 @@ func (t *ReaktorTest) Then(conditions ...ReaktorTestCondition) *ReaktorTest {
 	return t
 }
 
-func NewReaktorTestEvent(content map[string]any, metadata map[string]any) ReaktorTestEvent {
+func NewReaktorTestEvent(content map[string]any, metadata map[string]string) ReaktorTestEvent {
 	return ReaktorTestEvent{
 		Metadata: metadata,
 		Content:  content,
@@ -43,7 +43,7 @@ func NewReaktorTestEvent(content map[string]any, metadata map[string]any) Reakto
 }
 
 type ReaktorTestEvent struct {
-	Metadata map[string]any
+	Metadata map[string]string
 	Content  map[string]any
 }
 
@@ -65,14 +65,14 @@ func (c BloblangReaktorTestCondition) ConditionType() string {
 	return "bloblang"
 }
 
-func HasMetadata(expected map[string]any) ReaktorTestCondition {
+func HasMetadata(expected map[string]string) ReaktorTestCondition {
 	return MetadataReaktorTestCondition{
 		Values: expected,
 		Strict: false,
 	}
 }
 
-func HasStrictMetadata(expected map[string]any) ReaktorTestCondition {
+func HasStrictMetadata(expected map[string]string) ReaktorTestCondition {
 	return MetadataReaktorTestCondition{
 		Values: expected,
 		Strict: true,
@@ -80,7 +80,7 @@ func HasStrictMetadata(expected map[string]any) ReaktorTestCondition {
 }
 
 type MetadataReaktorTestCondition struct {
-	Values map[string]interface{}
+	Values map[string]string
 	Strict bool
 }
 

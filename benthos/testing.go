@@ -40,14 +40,16 @@ func generateTest(ctx context.Context, test graph.ReaktorTest) (result map[strin
 		return nil, fmt.Errorf("test event is nil")
 	}
 
-	var conditions []map[string]any
+	conditions := map[string]any{}
 	for _, condition := range test.Conditions {
 		condition, err := generateCondition(ctx, condition)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate condition: %w", err)
 		}
 
-		conditions = append(conditions, condition)
+		for k, v := range condition {
+			conditions[k] = v
+		}
 	}
 
 	return map[string]any{
@@ -61,7 +63,7 @@ func generateTest(ctx context.Context, test graph.ReaktorTest) (result map[strin
 			},
 		},
 		"output_batches": [][]map[string]any{
-			conditions,
+			{conditions},
 		},
 	}, nil
 }

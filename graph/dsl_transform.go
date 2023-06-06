@@ -55,6 +55,8 @@ func (m Mapping) Generate(ctx context.Context) (string, error) {
 	} else {
 		if m.Field != "" {
 			fieldName = fmt.Sprintf("root.%s", fieldName)
+		} else {
+			fieldName = "root"
 		}
 	}
 

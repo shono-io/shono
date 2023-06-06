@@ -14,7 +14,7 @@ import (
 	"sync"
 )
 
-func Test(env graph.Environment) (err error) {
+func Test(env graph.Environment, logLevel string) (err error) {
 	// -- generate the benthos configuration
 	gen := benthos.NewGenerator()
 	output, err := gen.Generate(context.Background(), env)
@@ -33,7 +33,7 @@ func Test(env graph.Environment) (err error) {
 	}
 
 	// -- run the cli testing everything in the tmp dir
-	servicetest.RunCLIWithArgs(context.Background(), "benthos", "test", fmt.Sprintf("%s/*.yaml", tmpDir))
+	servicetest.RunCLIWithArgs(context.Background(), "benthos", "test", "--log", logLevel, fmt.Sprintf("%s/*.yaml", tmpDir))
 
 	return nil
 }

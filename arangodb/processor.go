@@ -2,10 +2,12 @@ package arangodb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/arangodb/go-driver"
 	"github.com/benthosdev/benthos/v4/public/bloblang"
 	"github.com/benthosdev/benthos/v4/public/service"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -143,25 +145,38 @@ func (a arangodbProc) processGet(ctx context.Context, message *service.Message) 
 }
 
 func (a arangodbProc) processAdd(ctx context.Context, message *service.Message) (service.MessageBatch, error) {
-	result := message.Copy()
 
 	data, err := a.getMessagePayload(message)
 	if err != nil {
 		return nil, err
 	}
 
+	if logrus.IsLevelEnabled(logrus.TraceLevel) {
+		b, _ := json.Marshal(data)
+		logrus.Tracef("storing document %s", b)
+	}
+
+	result := service.NewMessage(nil)
+
 	dm, err := a.col.CreateDocument(ctx, data)
 	if err != nil {
 		if driver.IsConflict(err) {
-			result.SetError(err)
-			return nil, nil
+			err2 := fmt.Errorf("a document with key %q already exists", data["_key"])
+			result.SetError(err2)
+			return nil, err2
 		}
 
-		return nil, fmt.Errorf("failed to replace document: %w", err)
+		return nil, fmt.Errorf("failed to add document: %w", err)
 	}
+
+	_ = message.MetaWalk(func(k string, v string) error {
+		result.MetaSet(k, v)
+		return nil
+	})
 
 	result.MetaSet("adb_key", dm.Key)
 	result.MetaSet("adb_revision", dm.Rev)
+	result.SetStructured(data)
 
 	return service.MessageBatch{result}, nil
 }
@@ -288,6 +303,19 @@ func (a arangodbProc) getMessagePayload(message *service.Message) (map[string]an
 		data["_key"] = key
 
 		return data, nil
+	case *service.Message:
+		m, err := data.AsStructuredMut()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get the value from the message: %w", err)
+		}
+
+		switch dt := m.(type) {
+		case map[string]any:
+			return dt, nil
+		default:
+			return nil, fmt.Errorf("unsupported mapped message payload type: %T", sd)
+		}
+
 	default:
 		return nil, fmt.Errorf("unsupported message payload type: %T", sd)
 	}

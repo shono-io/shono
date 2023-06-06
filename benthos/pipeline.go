@@ -29,6 +29,17 @@ func (g *Generator) generateProcessors(ctx context.Context, result map[string]an
 		}
 	}
 
+	cases = append(cases, map[string]any{
+		"processors": []map[string]any{
+			{
+				"log": map[string]any{
+					"level":   "TRACE",
+					"message": "no processor for ${!this.format_json()}",
+				},
+			},
+		},
+	})
+
 	result["processors"] = []map[string]any{
 		{"switch": cases},
 	}
@@ -51,12 +62,7 @@ func toCase(ctx context.Context, env graph.Environment, reaktor graph.Reaktor) (
 
 	// -- we will add a check on the type header
 	res["check"] = fmt.Sprintf("@io_shono_kind == %q", reaktor.InputEventKey().CodeString())
-	res["processors"] = []map[string]any{
-		{
-			"label": labelize(reaktor.Key().CodeString()),
-			"try":   processors,
-		},
-	}
+	res["processors"] = processors
 
 	return res, nil
 }
