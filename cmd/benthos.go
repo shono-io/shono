@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	_ "github.com/benthosdev/benthos/v4/public/components/all"
-	_ "github.com/shono-io/shono/arangodb"
+	_ "github.com/shono-io/shono/storage/arangodb"
 )
 
 // benthosCmd represents the benthos command

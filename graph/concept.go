@@ -31,6 +31,12 @@ func WithConceptSingleName(single string) ConceptOpt {
 	}
 }
 
+func WithRequest(request ...Request) ConceptOpt {
+	return func(c *Concept) {
+		c.requests = append(c.requests, request...)
+	}
+}
+
 func NewConcept(key commons.Key, opts ...ConceptOpt) Concept {
 	result := Concept{
 		key.Parent(),
@@ -39,6 +45,7 @@ func NewConcept(key commons.Key, opts ...ConceptOpt) Concept {
 		"",
 		fmt.Sprintf("%ss", key.Code()),
 		key.Code(),
+		[]Request{},
 	}
 
 	for _, opt := range opts {
@@ -55,6 +62,7 @@ type Concept struct {
 	description string
 	plural      string
 	single      string
+	requests    []Request
 }
 
 func (c Concept) Key() commons.Key {
@@ -79,4 +87,8 @@ func (c Concept) Plural() string {
 
 func (c Concept) Single() string {
 	return c.single
+}
+
+func (c Concept) Requests() []Request {
+	return c.requests
 }

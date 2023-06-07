@@ -1,8 +1,8 @@
 package graph
 
 import (
-	"github.com/shono-io/shono/backbone"
 	"github.com/shono-io/shono/commons"
+	"github.com/shono-io/shono/systems/backbone"
 )
 
 type Environment interface {

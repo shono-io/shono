@@ -6,8 +6,8 @@ import (
 	_ "github.com/benthosdev/benthos/v4/public/components/all"
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/rs/xid"
-	"github.com/shono-io/shono/backbone"
 	"github.com/shono-io/shono/graph"
+	"github.com/shono-io/shono/systems/backbone"
 )
 
 type Opt func(*Runtime)

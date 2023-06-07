@@ -4,11 +4,17 @@ go 1.20
 
 require (
 	github.com/arangodb/go-driver v1.5.2
+	github.com/auth0/go-jwt-middleware/v2 v2.1.0
 	github.com/benthosdev/benthos/v4 v4.15.0
+	github.com/go-chi/chi/v5 v5.0.8
+	github.com/go-chi/cors v1.2.1
 	github.com/rs/xid v1.5.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
+	github.com/swaggest/openapi-go v0.2.30
+	github.com/swaggest/rest v0.2.50
+	github.com/swaggest/swgui v1.6.3
 	github.com/twmb/franz-go v1.13.2
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -223,6 +229,7 @@ require (
 	github.com/rivo/uniseg v0.3.4 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/santhosh-tekuri/jsonschema/v3 v3.1.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/segmentio/encoding v0.3.5 // indirect
 	github.com/segmentio/ksuid v1.0.4 // indirect
@@ -237,11 +244,16 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.3 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
+	github.com/swaggest/form/v5 v5.0.4 // indirect
+	github.com/swaggest/jsonschema-go v0.3.51 // indirect
+	github.com/swaggest/refl v1.1.0 // indirect
+	github.com/swaggest/usecase v1.2.1 // indirect
 	github.com/tetratelabs/wazero v1.0.1 // indirect
 	github.com/tilinna/z85 v1.0.0 // indirect
 	github.com/trinodb/trino-go-client v0.309.0 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.4.0 // indirect
 	github.com/urfave/cli/v2 v2.11.0 // indirect
+	github.com/vearutop/statigz v1.2.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
@@ -294,6 +306,8 @@ require (
 	gopkg.in/jcmturner/gokrb5.v6 v6.1.1 // indirect
 	gopkg.in/jcmturner/rpc.v1 v1.1.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
+	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
 	modernc.org/cc/v3 v3.40.0 // indirect
 	modernc.org/ccgo/v3 v3.16.13 // indirect

@@ -1,64 +1,104 @@
 package commons
 
+import "fmt"
+
+func Parse(parts ...string) (Key, error) {
+	if len(parts)%2 != 0 {
+		return nil, fmt.Errorf("an uneven number of parts cannot result in a valid key: %v", parts)
+	}
+
+	var sections []KeySection
+	for i := 0; i < len(parts); i += 2 {
+		sections = append(sections, KeySection{Kind: parts[i], Code: parts[i+1]})
+	}
+
+	return key{sections}, nil
+}
+
 type KeySection struct {
 	Kind string
 	Code string
 }
 
-type Key []KeySection
-
-func NewKey(kind, code string) Key {
-	return Key{KeySection{Kind: kind, Code: code}}
+type Key interface {
+	Parent() Key
+	Child(kind, code string) Key
+	Code() string
+	Kind() string
+	String() string
+	CodeString() string
 }
 
-func (k Key) Parent() Key {
-	if len(k) == 0 {
+type key struct {
+	sections []KeySection
+}
+
+func NewKey(kind, code string) Key {
+	return key{[]KeySection{{Kind: kind, Code: code}}}
+}
+
+func (k key) Parent() Key {
+	if len(k.sections) == 0 {
 		return nil
 	}
 
-	return (k)[:len(k)-1]
+	return key{(k.sections)[:len(k.sections)-1]}
 }
 
-func (k Key) Child(kind, code string) Key {
-	return append(k, KeySection{Kind: kind, Code: code})
+func (k key) Child(kind, code string) Key {
+	return key{append(k.sections, KeySection{Kind: kind, Code: code})}
 }
 
-func (k Key) Code() string {
-	if len(k) == 0 {
+func (k key) Code() string {
+	if len(k.sections) == 0 {
 		return ""
 	}
 
-	return k[len(k)-1].Code
+	return k.sections[len(k.sections)-1].Code
 }
 
-func (k Key) Kind() string {
-	if len(k) == 0 {
+func (k key) Kind() string {
+	if len(k.sections) == 0 {
 		return ""
 	}
 
-	return k[len(k)-1].Kind
+	return k.sections[len(k.sections)-1].Kind
 }
 
-func (k Key) String() string {
-	if len(k) == 0 {
+func (k key) String() string {
+	if len(k.sections) == 0 {
 		return ""
 	}
 
 	var s string
-	for _, section := range k {
+	for _, section := range k.sections {
 		s += section.Kind + "_" + section.Code + ":"
 	}
 	return s[:len(s)-1]
 }
 
-func (k Key) CodeString() string {
-	if len(k) == 0 {
+func (k key) CodeString() string {
+	if len(k.sections) == 0 {
 		return ""
 	}
 
 	var s string
-	for _, section := range k {
+	for _, section := range k.sections {
 		s += section.Code + "__"
 	}
 	return s[:len(s)-2]
+}
+
+func (k key) MarshalJSON() ([]byte, error) {
+	return []byte(k.String()), nil
+}
+
+func (k key) UnmarshalJSON(data []byte) error {
+	parsed, err := Parse(string(data))
+	if err != nil {
+		return err
+	}
+
+	k.sections = parsed.(key).sections
+	return nil
 }

@@ -1,9 +1,9 @@
 package local
 
 import (
-	"github.com/shono-io/shono/backbone"
 	"github.com/shono-io/shono/commons"
 	"github.com/shono-io/shono/graph"
+	"github.com/shono-io/shono/systems/backbone"
 )
 
 func NewEnvironment(bb backbone.Backbone) *Environment {

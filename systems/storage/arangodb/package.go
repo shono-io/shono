@@ -2,6 +2,7 @@ package arangodb
 
 import (
 	"github.com/benthosdev/benthos/v4/public/service"
+	"github.com/shono-io/shono/systems"
 )
 
 func init() {
@@ -18,4 +19,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	systems.RegisterStorageSystem("arangodb", &system{})
 }
