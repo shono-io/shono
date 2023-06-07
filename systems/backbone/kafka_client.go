@@ -2,6 +2,7 @@ package backbone
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
@@ -14,6 +15,8 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl"
 	kaws "github.com/twmb/franz-go/pkg/sasl/aws"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
+	"net"
+	"time"
 )
 
 func (k *kafkaBackbone) GetClient() (Client, error) {
@@ -32,7 +35,16 @@ func (k *kafkaBackbone) GetClient() (Client, error) {
 		opts = append(opts, kgo.SASL(ms...))
 	}
 
-	panic("implement me")
+	if k.config.TLS != nil && k.config.TLS.Enabled {
+		opts = append(opts, kgo.Dialer((&tls.Dialer{NetDialer: &net.Dialer{Timeout: 10 * time.Second}}).DialContext))
+	}
+
+	cl, err := kgo.NewClient(opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &kafkaClient{cl}, nil
 }
 
 func asSASLMechanism(config SASLConfig) (sasl.Mechanism, error) {
@@ -40,7 +52,7 @@ func asSASLMechanism(config SASLConfig) (sasl.Mechanism, error) {
 	case "PLAIN":
 		return plain.Auth{User: config.Username, Pass: config.Password}.AsMechanism(), nil
 	case "AWS_MSK_IAM":
-		awsSession, err := getAwsSession(*config.AwsConfig)
+		awsSession, err := getAwsSession(config.Aws)
 		if err != nil {
 			return nil, err
 		}

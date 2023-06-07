@@ -8,6 +8,7 @@ import (
 	"github.com/benthosdev/benthos/v4/public/service/servicetest"
 	"github.com/shono-io/shono/benthos"
 	"github.com/shono-io/shono/graph"
+	"github.com/shono-io/shono/systems/storage"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -15,6 +16,9 @@ import (
 )
 
 func Test(env graph.Environment, logLevel string) (err error) {
+	// -- register the storage processor
+	storage.Register(env)
+
 	// -- generate the benthos configuration
 	gen := benthos.NewGenerator()
 	output, err := gen.Generate(context.Background(), env)
@@ -39,6 +43,9 @@ func Test(env graph.Environment, logLevel string) (err error) {
 }
 
 func Run(env graph.Environment) (err error) {
+	// -- register the storage processor
+	storage.Register(env)
+
 	// -- generate the benthos configuration
 	gen := benthos.NewGenerator()
 	output, err := gen.Generate(context.Background(), env)
@@ -52,24 +59,32 @@ func Run(env graph.Environment) (err error) {
 	}
 
 	// -- create a waitgroup to wait for all the units to finish
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 
 	// -- each unit will become a benthos stream
 	for _, stream := range output.Streams {
+		wg.Add(1)
 		go func(stream benthos.Stream) {
-			wg.Add(1)
 			logrus.Infof("starting stream %s", stream.Concept.Key())
 			if err := runStreamLocally(stream); err != nil {
-				logrus.Panicf("stream %s failed: %v", stream.Concept.Key(), err)
+				dir := os.TempDir()
+				if fn, err := stream.Dump(dir); err == nil {
+					logrus.Infof("stream %s written to %s", stream.Concept.Key(), fn)
+				} else {
+					logrus.Errorf("failed to dump stream %s: %v", stream.Concept.Key(), err)
+				}
+
+				logrus.Errorf("stream %s failed: %v", stream.Concept.Key(), err)
 				wg.Done()
+				return
 			}
+			wg.Add(-1)
 		}(stream)
 	}
 
 	logrus.Infof("waiting for all streams to finish")
 
 	wg.Wait()
-
 	return nil
 }
 

@@ -17,6 +17,14 @@ func (g *Generator) generateInput(ctx context.Context, result map[string]any, en
 		return err
 	}
 
-	result["input"], err = bb.GetConsumerConfig(g.group, events)
+	res, err := bb.GetConsumerConfig(g.group, events)
+	if err != nil {
+		return err
+	}
+
+	//delete(res, "")
+
+	result["input"] = res
+
 	return err
 }

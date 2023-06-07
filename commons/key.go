@@ -1,6 +1,9 @@
 package commons
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 func Parse(parts ...string) (Key, error) {
 	if len(parts)%2 != 0 {
@@ -13,6 +16,16 @@ func Parse(parts ...string) (Key, error) {
 	}
 
 	return key{sections}, nil
+}
+
+func ParseString(fullKey string) (Key, error) {
+	var result []string
+	parts := strings.Split(fullKey, "__")
+	for _, part := range parts {
+		result = append(result, strings.Split(part, "_")...)
+	}
+
+	return Parse(result...)
 }
 
 type KeySection struct {
@@ -72,9 +85,9 @@ func (k key) String() string {
 
 	var s string
 	for _, section := range k.sections {
-		s += section.Kind + "_" + section.Code + ":"
+		s += section.Kind + "_" + section.Code + "__"
 	}
-	return s[:len(s)-1]
+	return s[:len(s)-2]
 }
 
 func (k key) CodeString() string {

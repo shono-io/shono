@@ -55,7 +55,7 @@ func (c client) List(ctx context.Context, collection string, filters map[string]
 	return &cursorWrapper{cursor, ctx}, nil
 }
 
-func (c client) Get(ctx context.Context, collection string, key commons.Key) (map[string]any, error) {
+func (c client) Get(ctx context.Context, collection string, key string) (map[string]any, error) {
 	col, err := c.db.Collection(ctx, collection)
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
@@ -66,26 +66,26 @@ func (c client) Get(ctx context.Context, collection string, key commons.Key) (ma
 	}
 
 	var target map[string]any
-	_, err = col.ReadDocument(ctx, key.String(), &target)
+	_, err = col.ReadDocument(ctx, key, &target)
 	return target, err
 }
 
-func (c client) Set(ctx context.Context, collection string, key commons.Key, value map[string]any) error {
+func (c client) Set(ctx context.Context, collection string, key string, value map[string]any) error {
 	col, err := c.db.Collection(ctx, collection)
 	if err != nil {
 		return fmt.Errorf("failed to get collection: %w", err)
 	}
 
-	fnd, err := col.DocumentExists(ctx, key.String())
+	fnd, err := col.DocumentExists(ctx, key)
 	if err != nil {
 		return fmt.Errorf("failed to check if document exists: %w", err)
 	}
 
 	// -- override the key
-	value["_key"] = key.String()
+	value["_key"] = key
 
 	if fnd {
-		_, err = col.ReplaceDocument(ctx, key.String(), value)
+		_, err = col.ReplaceDocument(ctx, key, value)
 		return err
 	} else {
 		_, err = col.CreateDocument(ctx, value)
@@ -93,27 +93,31 @@ func (c client) Set(ctx context.Context, collection string, key commons.Key, val
 	}
 }
 
-func (c client) Add(ctx context.Context, collection string, key commons.Key, value map[string]any) error {
+func (c client) Add(ctx context.Context, collection string, key string, value map[string]any) error {
 	col, err := c.db.Collection(ctx, collection)
 	if err != nil {
 		return fmt.Errorf("failed to get collection: %w", err)
 	}
 
 	// -- override the key
-	value["_key"] = key.String()
+	value["_key"] = key
 
 	_, err = col.CreateDocument(ctx, value)
 	return err
 }
 
-func (c client) Delete(ctx context.Context, collection string, key commons.Key) error {
+func (c client) Delete(ctx context.Context, collection string, key string) error {
 	col, err := c.db.Collection(ctx, collection)
 	if err != nil {
 		return fmt.Errorf("failed to get collection: %w", err)
 	}
 
-	_, err = col.RemoveDocument(ctx, key.String())
+	_, err = col.RemoveDocument(ctx, key)
 	return err
+}
+
+func (c client) Close() error {
+	return nil
 }
 
 func (c client) collectionForKey(ctx context.Context, key commons.Key) (driver.Collection, error) {

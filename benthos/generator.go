@@ -118,15 +118,15 @@ type Stream struct {
 	Unit    map[string]any
 }
 
-func (s *Stream) Dump(dir string) error {
-	filename := fmt.Sprintf("%s.yaml", s.Concept.Key().CodeString())
+func (s *Stream) Dump(dir string) (string, error) {
+	filename := fmt.Sprintf("%s/%s.yaml", dir, s.Concept.Key().CodeString())
 
 	b, err := yaml.Marshal(s.Unit)
 	if err != nil {
-		return err
+		return filename, err
 	}
 
-	return os.WriteFile(fmt.Sprintf("%s/%s", dir, filename), b, 0644)
+	return filename, os.WriteFile(filename, b, 0644)
 }
 
 type GeneratorOutput struct {
@@ -149,7 +149,7 @@ func (g *GeneratorOutput) Dump(dir string) error {
 	}
 
 	for _, stream := range g.Streams {
-		if err := stream.Dump(dir); err != nil {
+		if _, err := stream.Dump(dir); err != nil {
 			return fmt.Errorf("failed to dump stream: %w", err)
 		}
 	}

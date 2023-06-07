@@ -5,90 +5,116 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/shono-io/shono/graph"
 	"github.com/sirupsen/logrus"
-	"github.com/swaggest/openapi-go/openapi3"
-	"github.com/swaggest/rest/nethttp"
-	"github.com/swaggest/rest/web"
-	"github.com/swaggest/swgui/v4emb"
 	"net/http"
-	"net/url"
 	"time"
 )
 
-type ApiOpt func(*web.Service, chi.Router)
-
-func WithRoutes(routes func(r chi.Router)) ApiOpt {
-	return func(s *web.Service, r chi.Router) {
-		routes(r)
-	}
-}
-
-func NewApi(issuerUrl string, audience string) (*API, error) {
-	iu, err := url.Parse(issuerUrl)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse the issuer url: %v", err)
-	}
-
-	service := web.DefaultService()
-	service.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: logrus.StandardLogger()}))
-	service.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"https://*", "http://*"},
-		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
-	}))
-
-	service.Wrap(
+func NewApi(env graph.Environment) (*API, error) {
+	r := chi.NewRouter()
+	r.Use(
+		middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: logrus.StandardLogger()}),
+		cors.Handler(cors.Options{
+			AllowedOrigins: []string{"https://*", "http://*"},
+			// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: false,
+			MaxAge:           300, // Maximum value not ignored by any of major browsers
+		}),
 		middleware.NoCache,
 		middleware.Timeout(30*time.Second),
 	)
 
-	service.OpenAPI.Info.Title = "Shono API"
-	service.OpenAPI.Info.Version = "1.0.0"
-	service.Docs("/docs", v4emb.New)
+	r.Mount("/debug", middleware.Profiler())
 
-	auth0Scheme := openapi3.SecurityScheme{
-		OAuth2SecurityScheme: &openapi3.OAuth2SecurityScheme{
-			Flows: openapi3.OAuthFlows{
-				ClientCredentials: &openapi3.ClientCredentialsFlow{
-					TokenURL: iu.String() + "oauth/token",
-					MapOfAnything: map[string]interface{}{
-						"audience": audience,
-					},
-				},
-			},
-		},
+	if err := registerRoutesForEnv(r, env); err != nil {
+		return nil, err
 	}
 
-	secured := service.Group(func(r chi.Router) {
-		r.Use(auth0Middleware(service.OpenAPICollector, iu, audience))
-		r.Use(nethttp.SecurityMiddleware(service.OpenAPICollector, "auth0", auth0Scheme))
-		//r.Use(ContextMiddleware(db))
-	})
-
-	service.Mount("/debug", middleware.Profiler())
-
-	a := &API{
-		service: service,
-		secured: secured,
-	}
-
-	return a, nil
+	return &API{r}, nil
 }
 
 type API struct {
-	service *web.Service
-	secured chi.Router
-}
-
-func (a *API) SecuredRouter() chi.Router {
-	return a.secured
+	r chi.Router
 }
 
 func (a *API) Run() error {
 	logrus.Info("Starting the api")
-	return http.ListenAndServe("localhost:3002", a.service)
+	return http.ListenAndServe("localhost:3002", a.r)
+}
+
+func registerRoutesForEnv(r chi.Router, env graph.Environment) error {
+	scopes, err := env.ListScopes()
+	if err != nil {
+		return err
+	}
+
+	for _, scope := range scopes {
+		if err := registerRoutesForScope(r, env, scope); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func registerRoutesForScope(r chi.Router, env graph.Environment, scope graph.Scope) error {
+	logrus.Infof("Registering routes for scope %s", scope.Name())
+
+	bb, err := env.GetBackbone()
+	if err != nil {
+		return err
+	}
+
+	bbc, err := bb.GetClient()
+	if err != nil {
+		return err
+	}
+
+	concepts, err := env.ListConceptsForScope(scope.Key())
+	if err != nil {
+		return err
+	}
+
+	for _, concept := range concepts {
+		if concept.Requests() == nil {
+			continue
+		}
+
+		for _, request := range concept.Requests() {
+			h, err := NewRequestHandler(env, bbc, request)
+			if err != nil {
+				return err
+			}
+
+			var path string
+			var method string
+			switch request.Kind {
+			case graph.ListOperationType:
+				method = http.MethodGet
+				path = fmt.Sprintf("/%s/%s", scope.Key().Code(), concept.Plural())
+			case graph.GetOperationType:
+				method = http.MethodGet
+				path = fmt.Sprintf("/%s/%s/{id}", scope.Key().Code(), concept.Plural())
+			case graph.CreateOperationType:
+				method = http.MethodPost
+				path = fmt.Sprintf("/%s/%s", scope.Key().Code(), concept.Plural())
+			case graph.UpdateOperationType:
+				method = http.MethodPut
+				path = fmt.Sprintf("/%s/%s/{id}", scope.Key().Code(), concept.Plural())
+			case graph.DeleteOperationType:
+				method = http.MethodDelete
+				path = fmt.Sprintf("/%s/%s/{id}", scope.Key().Code(), concept.Plural())
+			}
+
+			if method != "" {
+				r.Method(method, path, h)
+			}
+		}
+	}
+
+	return nil
 }

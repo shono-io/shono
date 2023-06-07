@@ -11,9 +11,9 @@ type KafkaBackboneConfig struct {
 	TLS              *TLS         `json:"tls" mapstructure:"tls"`
 	SASL             []SASLConfig `json:"sasl" mapstructure:"sasl"`
 
-	CheckpointLimit int    `json:"checkpoint_limit" mapstructure:"checkpoint_limit"`
-	CommitPeriod    string `json:"commit_period" mapstructure:"commit_period"`
-	StartFromOldest bool   `json:"start_from_oldest" mapstructure:"start_from_oldest"`
+	CheckpointLimit *int    `json:"checkpoint_limit,omitempty" mapstructure:"checkpoint_limit,omitempty" yaml:"checkpoint_limit,omitempty"`
+	CommitPeriod    *string `json:"commit_period,omitempty" mapstructure:"commit_period,omitempty" yaml:"commit_period,omitempty"`
+	StartFromOldest *bool   `json:"start_from_oldest,omitempty" mapstructure:"start_from_oldest,omitempty" yaml:"start_from_oldest,omitempty"`
 
 	LogStrategy LogStrategy `json:"log_strategy" mapstructure:"-"`
 }
@@ -43,16 +43,16 @@ type AWSCredentials struct {
 	Id             string `json:"id" mapstructure:"id"`
 	Secret         string `json:"secret" mapstructure:"secret"`
 	Token          string `json:"token" mapstructure:"token"`
-	FromEC2Role    bool   `json:"from_ec2_role" mapstructure:"from_ec2_role"`
+	FromEC2Role    bool   `json:"from_ec2_role" mapstructure:"from_ec2_role" yaml:"from_ec2_role"`
 	Role           string `json:"role" mapstructure:"role"`
-	RoleExternalId string `json:"role_external_id" mapstructure:"role_external_id"`
+	RoleExternalId string `json:"role_external_id" mapstructure:"role_external_id" yaml:"role_external_id"`
 }
 
 type SASLConfig struct {
 	Mechanism  string            `json:"mechanism" mapstructure:"mechanism"`
 	Username   string            `json:"username" mapstructure:"username"`
 	Password   string            `json:"password" mapstructure:"password"`
-	AwsConfig  *AWSConfig        `json:"aws" mapstructure:"aws"`
+	Aws        AWSConfig         `json:"aws" mapstructure:"aws"`
 	Token      string            `json:"token" mapstructure:"token"`
 	Extensions map[string]string `json:"extensions" mapstructure:"extensions"`
 }
@@ -133,6 +133,10 @@ func topicOutput(config map[string]any, topic string) map[string]any {
 	for k, v := range config {
 		result[k] = v
 	}
+
+	delete(result, "checkpoint_limit")
+	delete(result, "commit_period")
+	delete(result, "start_from_oldest")
 
 	return map[string]any{
 		"kafka_franz": result,

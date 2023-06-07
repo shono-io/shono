@@ -28,7 +28,7 @@ func auth0Middleware(oa *openapi.Collector, issuerURL *url.URL, audience string)
 		},
 	})
 
-	provider := jwks.NewCachingProvider(issuerURL, time.Duration(5*time.Minute))
+	provider := jwks.NewCachingProvider(issuerURL, 5*time.Minute)
 
 	jwtValidator, _ := validator.New(provider.KeyFunc,
 		validator.RS256,

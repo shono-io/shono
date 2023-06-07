@@ -150,29 +150,10 @@ func toProcessor(ctx context.Context, env graph.Environment, l graph.Logic) (map
 			"mapping": mappings,
 		}, nil
 	case graph.StoreLogic:
-		// -- get the store
-		store, err := env.GetStore(lt.StoreKey)
-		if err != nil {
-			return nil, err
+		result := map[string]any{
+			"store_key": lt.StoreKey.String(),
+			"operation": lt.Operation,
 		}
-
-		if store == nil {
-			return nil, fmt.Errorf("store %q not found", lt.StoreKey)
-		}
-
-		// -- get the storage linked to the store
-		storage, err := env.GetStorage(store.StorageKey())
-		if err != nil {
-			return nil, err
-		}
-
-		if storage == nil {
-			return nil, fmt.Errorf("storage %q not found", lt.StoreKey)
-		}
-
-		result := storage.Config()
-		result["operation"] = lt.Operation
-		result["collection"] = store.Collection()
 
 		if lt.Key != nil {
 			result["key"] = lt.Key
@@ -192,7 +173,7 @@ func toProcessor(ctx context.Context, env graph.Environment, l graph.Logic) (map
 		}
 
 		return map[string]any{
-			storage.Kind(): result,
+			"store": result,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown logic type: %T", lt)

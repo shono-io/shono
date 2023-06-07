@@ -18,6 +18,11 @@ func (g *Generator) generateOutput(ctx context.Context, result map[string]any, e
 		return err
 	}
 
-	result["output"], err = bb.GetProducerConfig(events)
+	res, err := bb.GetProducerConfig(events)
+	if err != nil {
+		return err
+	}
+
+	result["output"] = res
 	return err
 }
