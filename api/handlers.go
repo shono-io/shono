@@ -6,20 +6,22 @@ import (
 	"github.com/rs/xid"
 	"github.com/shono-io/shono/commons"
 	"github.com/shono-io/shono/graph"
-	"github.com/shono-io/shono/systems"
-	"github.com/shono-io/shono/systems/backbone"
+	"github.com/shono-io/shono/runtime"
+	"github.com/shono-io/shono/storage"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-func NewRequestHandler(env graph.Environment, bbc backbone.Client, req graph.Request) (h http.Handler, err error) {
+func NewRequestHandler(env *runtime.Environment, bbc runtime.Client, con graph.Concept, req graph.Request) (h http.Handler, err error) {
 	switch req.Kind {
 	case graph.ListOperationType, graph.GetOperationType:
-		var store *graph.Store
-		var sc graph.StorageClient
-		store, sc, err = storageClientByKey(env, req.StoreKey)
-		return newGetRequestHandler(store, sc)
+		sc, err := storageClientForConcept(env, con)
+		if err != nil {
+			return nil, err
+		}
+
+		return newGetRequestHandler(con, sc)
 
 	case graph.CreateOperationType:
 		return newPostRequestHandler(bbc, req.EventKey)
@@ -32,7 +34,7 @@ func NewRequestHandler(env graph.Environment, bbc backbone.Client, req graph.Req
 	}
 }
 
-func newGetRequestHandler(store *graph.Store, sc graph.StorageClient) (http.Handler, error) {
+func newGetRequestHandler(con graph.Concept, sc storage.Client) (http.Handler, error) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(r.URL.Path, "/")
 
@@ -45,7 +47,7 @@ func newGetRequestHandler(store *graph.Store, sc graph.StorageClient) (http.Hand
 				return
 			}
 
-			response, err := sc.Get(r.Context(), store.Collection(), key.String())
+			response, err := sc.Get(r.Context(), con.Store.Collection, key.String())
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
@@ -63,13 +65,13 @@ func newGetRequestHandler(store *graph.Store, sc graph.StorageClient) (http.Hand
 			}
 		} else {
 			// -- if there is an uneven number of parts, we are asking for a list of concepts from the storage
-			var paging *graph.PagingOpts
+			var paging *storage.PagingOpts
 			filters := map[string]any{}
 			for k, v := range r.URL.Query() {
 				switch k {
 				case "_size":
 					if paging == nil {
-						paging = &graph.PagingOpts{}
+						paging = &storage.PagingOpts{}
 					}
 
 					i, err := strconv.ParseInt(v[0], 10, 64)
@@ -81,7 +83,7 @@ func newGetRequestHandler(store *graph.Store, sc graph.StorageClient) (http.Hand
 					paging.Size = i
 				case "_offset":
 					if paging == nil {
-						paging = &graph.PagingOpts{}
+						paging = &storage.PagingOpts{}
 					}
 					i, err := strconv.ParseInt(v[0], 10, 64)
 					if err != nil {
@@ -95,7 +97,7 @@ func newGetRequestHandler(store *graph.Store, sc graph.StorageClient) (http.Hand
 				}
 			}
 
-			cur, err := sc.List(r.Context(), store.Collection(), filters, paging)
+			cur, err := sc.List(r.Context(), con.Store.Collection, filters, paging)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
@@ -123,7 +125,7 @@ func newGetRequestHandler(store *graph.Store, sc graph.StorageClient) (http.Hand
 	}), nil
 }
 
-func newPostRequestHandler(bbc backbone.Client, eventKey commons.Key) (http.Handler, error) {
+func newPostRequestHandler(bbc runtime.Client, eventKey commons.Key) (http.Handler, error) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(r.URL.Path, "/")
 		defer r.Body.Close()
@@ -153,7 +155,7 @@ func newPostRequestHandler(bbc backbone.Client, eventKey commons.Key) (http.Hand
 	}), nil
 }
 
-func newPutRequestHandler(bbc backbone.Client, eventKey commons.Key) (http.Handler, error) {
+func newPutRequestHandler(bbc runtime.Client, eventKey commons.Key) (http.Handler, error) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(r.URL.Path, "/")
 		defer r.Body.Close()
@@ -182,7 +184,7 @@ func newPutRequestHandler(bbc backbone.Client, eventKey commons.Key) (http.Handl
 	}), nil
 }
 
-func newDeleteRequestHandler(bbc backbone.Client, eventKey commons.Key) (http.Handler, error) {
+func newDeleteRequestHandler(bbc runtime.Client, eventKey commons.Key) (http.Handler, error) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(r.URL.Path, "/")
 		key, err := commons.Parse(parts...)
@@ -202,26 +204,16 @@ func newDeleteRequestHandler(bbc backbone.Client, eventKey commons.Key) (http.Ha
 	}), nil
 }
 
-func storageClientByKey(env graph.Environment, storeKey commons.Key) (*graph.Store, graph.StorageClient, error) {
-	// -- get the store from the environment
-	store, err := env.GetStore(storeKey)
-	if err != nil {
-		return nil, nil, err
+func storageClientForConcept(env *runtime.Environment, concept graph.Concept) (storage.Client, error) {
+	if concept.Store == nil {
+		return nil, fmt.Errorf("no store defined for concept %q", concept.ConceptReference)
 	}
 
-	// -- get the storage corresponding to the store
-	storage, err := env.GetStorage(store.StorageKey())
-	if err != nil {
-		return store, nil, err
-	}
-
-	// -- get the storage client
-	ss, fnd := systems.Storage[storage.Kind()]
-	if !fnd {
-		return store, nil, fmt.Errorf("storage system '%s' not found", storage.Kind())
+	s := env.GetStorageSystem(concept.Store.StorageKey)
+	if s == nil {
+		return nil, fmt.Errorf("storage system '%s' not found", concept.Store.StorageKey)
 	}
 
 	// -- get the client to the storage system
-	r, err := ss.GetClient(storage.Config())
-	return store, r, err
+	return s.GetClient()
 }

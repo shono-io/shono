@@ -1,100 +1,117 @@
 package graph
 
-import "github.com/shono-io/shono/commons"
-
-// == ENTITY ==========================================================================================================
-
-type ReaktorOpt func(reaktor *Reaktor)
-
-func WithName(name string) ReaktorOpt {
-	return func(reaktor *Reaktor) {
-		reaktor.name = name
-	}
-}
-
-func WithReaktorDescription(description string) ReaktorOpt {
-	return func(reaktor *Reaktor) {
-		reaktor.description = description
-	}
-}
-
-func WithOutputEvent(outputEventKeys ...commons.Key) ReaktorOpt {
-	return func(reaktor *Reaktor) {
-		reaktor.outputEventKeys = append(reaktor.outputEventKeys, outputEventKeys...)
-	}
-}
-
-func WithStore(store ...Store) ReaktorOpt {
-	return func(reaktor *Reaktor) {
-		reaktor.stores = append(reaktor.stores, store...)
-	}
-}
-
-func WithLogic(logic ...Logic) ReaktorOpt {
-	return func(reaktor *Reaktor) {
-		reaktor.logic = append(reaktor.logic, logic...)
-	}
-}
-
-func WithTest(tests ...ReaktorTest) ReaktorOpt {
-	return func(reaktor *Reaktor) {
-		reaktor.tests = append(reaktor.tests, tests...)
-	}
-}
-
-func NewReaktor(key commons.Key, inputEvent commons.Key, opts ...ReaktorOpt) Reaktor {
-	result := Reaktor{
-		key:           key,
-		name:          key.Code(),
-		inputEventKey: inputEvent,
-	}
-
-	for _, opt := range opts {
-		opt(&result)
-	}
-
-	return result
-}
+import (
+	"fmt"
+)
 
 type Reaktor struct {
-	key             commons.Key
-	name            string
-	description     string
-	inputEventKey   commons.Key
-	outputEventKeys []commons.Key
-	stores          []Store
-	logic           []Logic
-	tests           []ReaktorTest
+	ReaktorReference
+	Name    string          `yaml:"name"`
+	Docs    string          `yaml:"docs"`
+	Input   *EventReference `yaml:"input"`
+	Logic   []Logic         `yaml:"logic"`
+	Outputs []ReaktorOutput `yaml:"outputs"`
+	Tests   []ReaktorTest   `yaml:"tests"`
 }
 
-func (r Reaktor) Key() commons.Key {
-	return r.key
+type ReaktorOutput struct {
+	Event EventReference `yaml:"event"`
+	Docs  string         `yaml:"docs"`
 }
 
-func (r Reaktor) Name() string {
-	return r.name
+type ReaktorReference struct {
+	ScopeCode   string `yaml:"scopeCode"`
+	ConceptCode string `yaml:"conceptCode"`
+	Code        string `yaml:"code"`
 }
 
-func (r Reaktor) Description() string {
-	return r.description
+func (r ReaktorReference) String() string {
+	return r.ScopeCode + "__" + r.ConceptCode + "__" + r.Code
 }
 
-func (r Reaktor) InputEventKey() commons.Key {
-	return r.inputEventKey
+type ReaktorBuilder struct {
+	reaktor Reaktor
+	outputs map[string]string
 }
 
-func (r Reaktor) OutputEventKeys() []commons.Key {
-	return r.outputEventKeys
+func (b *ReaktorBuilder) ExecuteFor(scopeCode, conceptCode string, logics ...Logic) *ReaktorBuilder {
+	b.reaktor.ScopeCode = scopeCode
+	b.reaktor.ConceptCode = conceptCode
+	b.reaktor.Logic = logics
+	return b
 }
 
-func (r Reaktor) Logic() []Logic {
-	return r.logic
+func (b *ReaktorBuilder) NamedAs(name string) *ReaktorBuilder {
+	b.reaktor.Name = name
+	return b
 }
 
-func (r Reaktor) Tests() []ReaktorTest {
-	return r.tests
+func (b *ReaktorBuilder) WithDocs(docs string) *ReaktorBuilder {
+	b.reaktor.Docs = docs
+	return b
 }
 
-func (r Reaktor) Stores() []Store {
-	return r.stores
+func (b *ReaktorBuilder) Producing(eventCode, docs string) *ReaktorBuilder {
+	b.outputs[eventCode] = docs
+
+	return b
+}
+
+func (b *ReaktorBuilder) WithTest(test ReaktorTest) *ReaktorBuilder {
+	b.reaktor.Tests = append(b.reaktor.Tests, test)
+	return b
+}
+
+func (b *ReaktorBuilder) Build() (*Reaktor, error) {
+	if b.reaktor.Input == nil {
+		return nil, fmt.Errorf("no input event defined")
+	}
+
+	if b.reaktor.Logic == nil || len(b.reaktor.Logic) == 0 {
+		return nil, fmt.Errorf("no logic defined")
+	}
+
+	if b.reaktor.ScopeCode == "" {
+		return nil, fmt.Errorf("no scope code defined")
+	}
+
+	if b.reaktor.ConceptCode == "" {
+		return nil, fmt.Errorf("no concept code defined")
+	}
+
+	if b.reaktor.Name == "" {
+		b.reaktor.Name = fmt.Sprintf("On %s for concept %s in scope %s", b.reaktor.Input.Code, b.reaktor.ConceptCode, b.reaktor.ScopeCode)
+	}
+
+	for eventCode, docs := range b.outputs {
+		b.reaktor.Outputs = append(b.reaktor.Outputs, ReaktorOutput{
+			Event: EventReference{
+				ScopeCode:   b.reaktor.ScopeCode,
+				ConceptCode: b.reaktor.ConceptCode,
+				Code:        eventCode,
+			},
+			Docs: docs,
+		})
+	}
+
+	return &b.reaktor, nil
+}
+
+func InputEvent(scopeCode, conceptCode, eventCode string) *ReaktorBuilder {
+	return &ReaktorBuilder{
+		outputs: map[string]string{},
+		reaktor: Reaktor{
+			Input: &EventReference{
+				ScopeCode:   scopeCode,
+				ConceptCode: conceptCode,
+				Code:        eventCode,
+			},
+		},
+	}
+}
+
+type ReaktorRepo interface {
+	GetReaktorByReference(reference ReaktorReference) (*Reaktor, error)
+	GetReaktor(scopeCode, conceptCode, reaktorCode string) (*Reaktor, error)
+	ListReaktorsForConcept(scopeCode, conceptCode string) ([]Reaktor, error)
 }

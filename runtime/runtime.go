@@ -6,22 +6,17 @@ import (
 	_ "github.com/benthosdev/benthos/v4/public/components/all"
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/benthosdev/benthos/v4/public/service/servicetest"
-	"github.com/shono-io/shono/benthos"
 	"github.com/shono-io/shono/graph"
-	"github.com/shono-io/shono/systems/storage"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"os"
 	"sync"
 )
 
-func Test(env graph.Environment, logLevel string) (err error) {
-	// -- register the storage processor
-	storage.Register(env)
-
+func Test(reg graph.Registry, logLevel string) (err error) {
 	// -- generate the benthos configuration
-	gen := benthos.NewGenerator()
-	output, err := gen.Generate(context.Background(), env)
+	gen := NewGenerator()
+	output, err := gen.Generate(context.Background(), reg)
 	if err != nil {
 		return fmt.Errorf("failed to generate benthos configuration: %w", err)
 	}
@@ -42,13 +37,10 @@ func Test(env graph.Environment, logLevel string) (err error) {
 	return nil
 }
 
-func Run(env graph.Environment) (err error) {
-	// -- register the storage processor
-	storage.Register(env)
-
+func Run(reg graph.Registry) (err error) {
 	// -- generate the benthos configuration
-	gen := benthos.NewGenerator()
-	output, err := gen.Generate(context.Background(), env)
+	gen := NewGenerator()
+	output, err := gen.Generate(context.Background(), reg)
 	if err != nil {
 		return fmt.Errorf("failed to generate benthos configuration: %w", err)
 	}
@@ -64,17 +56,17 @@ func Run(env graph.Environment) (err error) {
 	// -- each unit will become a benthos stream
 	for _, stream := range output.Streams {
 		wg.Add(1)
-		go func(stream benthos.Stream) {
-			logrus.Infof("starting stream %s", stream.Concept.Key())
+		go func(stream Stream) {
+			logrus.Infof("starting stream %s", stream.Concept.ConceptReference)
 			if err := runStreamLocally(stream); err != nil {
 				dir := os.TempDir()
 				if fn, err := stream.Dump(dir); err == nil {
-					logrus.Infof("stream %s written to %s", stream.Concept.Key(), fn)
+					logrus.Infof("stream %s written to %s", stream.Concept.ConceptReference, fn)
 				} else {
-					logrus.Errorf("failed to dump stream %s: %v", stream.Concept.Key(), err)
+					logrus.Errorf("failed to dump stream %s: %v", stream.Concept.ConceptReference, err)
 				}
 
-				logrus.Errorf("stream %s failed: %v", stream.Concept.Key(), err)
+				logrus.Errorf("stream %s failed: %v", stream.Concept.ConceptReference, err)
 				wg.Done()
 				return
 			}
@@ -88,7 +80,7 @@ func Run(env graph.Environment) (err error) {
 	return nil
 }
 
-func runStreamLocally(stream benthos.Stream) error {
+func runStreamLocally(stream Stream) error {
 	// -- convert the unit to yaml
 	b, err := yaml.Marshal(stream.Unit)
 	if err != nil {

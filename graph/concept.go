@@ -1,94 +1,42 @@
 package graph
 
-import (
-	"fmt"
-	"github.com/shono-io/shono/commons"
-)
-
-type ConceptOpt func(*Concept)
-
-func WithConceptName(name string) ConceptOpt {
-	return func(c *Concept) {
-		c.name = name
-	}
-}
-
-func WithConceptDescription(description string) ConceptOpt {
-	return func(c *Concept) {
-		c.description = description
-	}
-}
-
-func WithConceptPluralName(plural string) ConceptOpt {
-	return func(c *Concept) {
-		c.plural = plural
-	}
-}
-
-func WithConceptSingleName(single string) ConceptOpt {
-	return func(c *Concept) {
-		c.single = single
-	}
-}
-
-func WithRequest(request ...Request) ConceptOpt {
-	return func(c *Concept) {
-		c.requests = append(c.requests, request...)
-	}
-}
-
-func NewConcept(key commons.Key, opts ...ConceptOpt) Concept {
-	result := Concept{
-		key.Parent(),
-		key,
-		key.Code(),
-		"",
-		fmt.Sprintf("%ss", key.Code()),
-		key.Code(),
-		[]Request{},
-	}
-
-	for _, opt := range opts {
-		opt(&result)
-	}
-
-	return result
-}
+import "fmt"
 
 type Concept struct {
-	scopeKey    commons.Key
-	key         commons.Key
-	name        string
-	description string
-	plural      string
-	single      string
-	requests    []Request
+	ConceptReference
+	Name        string        `yaml:"name"`
+	Description string        `yaml:"description"`
+	Plural      string        `yaml:"plural"`
+	Single      string        `yaml:"single"`
+	Store       *ConceptStore `yaml:"store"`
+	Requests    []Request     `yaml:"requests"`
 }
 
-func (c Concept) Key() commons.Key {
-	return c.key
+type ConceptStore struct {
+	StorageKey string `yaml:"storageKey"`
+	Collection string `yaml:"collection"`
 }
 
-func (c Concept) Name() string {
-	return c.name
+func ParseConceptReference(input string) (ConceptReference, error) {
+	var ref ConceptReference
+	if _, err := fmt.Sscanf(input, "%s__%s", &ref.ScopeCode, &ref.Code); err != nil {
+		return ConceptReference{}, err
+	}
+
+	return ref, nil
 }
 
-func (c Concept) Description() string {
-	return c.description
+type ConceptReference struct {
+	ScopeCode string `yaml:"scopeCode"`
+	Code      string `yaml:"code"`
 }
 
-func (c Concept) ScopeKey() commons.Key {
-	return c.scopeKey
+func (r ConceptReference) String() string {
+	return r.ScopeCode + "__" + r.Code
 }
 
-func (c Concept) Plural() string {
-	return c.plural
-}
-
-func (c Concept) Single() string {
-	return c.single
-}
-
-func (c Concept) Requests() []Request {
-	return c.requests
+type ConceptRepo interface {
+	GetConceptByReference(reference ConceptReference) (*Concept, error)
+	GetConcept(scopeCode, code string) (*Concept, error)
+	ListConceptsForScope(scopeCode string) ([]Concept, error)
 }

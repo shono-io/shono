@@ -1,60 +1,33 @@
 package graph
 
-import "github.com/shono-io/shono/commons"
+import "context"
 
-type StorageOpt func(*Storage)
-
-func WithStorageName(name string) StorageOpt {
-	return func(s *Storage) {
-		s.name = name
-	}
+type Storage interface {
+	Key() string
+	GetClient() (StorageClient, error)
 }
 
-func WithStorageDescription(description string) StorageOpt {
-	return func(s *Storage) {
-		s.description = description
-	}
+type StorageClient interface {
+	List(ctx context.Context, collection string, filters map[string]any, paging *PagingOpts) (Cursor, error)
+	Get(ctx context.Context, collection string, key string) (map[string]any, error)
+	Set(ctx context.Context, collection string, key string, value map[string]any) error
+	Add(ctx context.Context, collection string, key string, value map[string]any) error
+	Delete(ctx context.Context, collection string, key string) error
+	Close() error
 }
 
-func NewStorage(key commons.Key, kind string, config map[string]any, opts ...StorageOpt) (*Storage, error) {
-	result := &Storage{
-		key:    key,
-		name:   key.Code(),
-		kind:   kind,
-		config: config,
-	}
-
-	for _, opt := range opts {
-		opt(result)
-	}
-
-	return result, nil
+type PagingOpts struct {
+	Offset int64
+	Size   int64
 }
 
-type Storage struct {
-	key         commons.Key
-	name        string
-	description string
-	kind        string
-	config      map[string]any
+type Cursor interface {
+	HasNext() bool
+	Read() (map[string]any, error)
+	Close() error
 }
 
-func (s Storage) Key() commons.Key {
-	return s.key
-}
-
-func (s Storage) Name() string {
-	return s.name
-}
-
-func (s Storage) Description() string {
-	return s.description
-}
-
-func (s Storage) Kind() string {
-	return s.kind
-}
-
-func (s Storage) Config() map[string]any {
-	return s.config
+type StorageRepo interface {
+	GetStorage(key string) Storage
+	ListStorages() []Storage
 }

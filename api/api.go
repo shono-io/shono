@@ -6,12 +6,13 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/shono-io/shono/graph"
+	"github.com/shono-io/shono/runtime"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 )
 
-func NewApi(env graph.Environment) (*API, error) {
+func NewApi(env *runtime.Environment) (*API, error) {
 	r := chi.NewRouter()
 	r.Use(
 		middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: logrus.StandardLogger()}),
@@ -46,8 +47,8 @@ func (a *API) Run() error {
 	return http.ListenAndServe("localhost:3002", a.r)
 }
 
-func registerRoutesForEnv(r chi.Router, env graph.Environment) error {
-	scopes, err := env.ListScopes()
+func registerRoutesForEnv(r chi.Router, env *runtime.Environment) error {
+	scopes, err := env.Registry.ListScopes()
 	if err != nil {
 		return err
 	}
@@ -61,30 +62,25 @@ func registerRoutesForEnv(r chi.Router, env graph.Environment) error {
 	return nil
 }
 
-func registerRoutesForScope(r chi.Router, env graph.Environment, scope graph.Scope) error {
-	logrus.Infof("Registering routes for scope %s", scope.Name())
+func registerRoutesForScope(r chi.Router, env *runtime.Environment, scope graph.Scope) error {
+	logrus.Infof("Registering routes for scope %s", scope.Name)
 
-	bb, err := env.GetBackbone()
+	bbc, err := env.Backbone.GetClient()
 	if err != nil {
 		return err
 	}
 
-	bbc, err := bb.GetClient()
-	if err != nil {
-		return err
-	}
-
-	concepts, err := env.ListConceptsForScope(scope.Key())
+	concepts, err := env.Registry.ListConceptsForScope(scope.Code)
 	if err != nil {
 		return err
 	}
 
 	for _, concept := range concepts {
-		if concept.Requests() == nil {
+		if concept.Requests == nil {
 			continue
 		}
 
-		for _, request := range concept.Requests() {
+		for _, request := range concept.Requests {
 			h, err := NewRequestHandler(env, bbc, request)
 			if err != nil {
 				return err
@@ -95,19 +91,19 @@ func registerRoutesForScope(r chi.Router, env graph.Environment, scope graph.Sco
 			switch request.Kind {
 			case graph.ListOperationType:
 				method = http.MethodGet
-				path = fmt.Sprintf("/%s/%s", scope.Key().Code(), concept.Plural())
+				path = fmt.Sprintf("/%s/%s", scope.Code, concept.Plural)
 			case graph.GetOperationType:
 				method = http.MethodGet
-				path = fmt.Sprintf("/%s/%s/{id}", scope.Key().Code(), concept.Plural())
+				path = fmt.Sprintf("/%s/%s/{id}", scope.Code, concept.Plural)
 			case graph.CreateOperationType:
 				method = http.MethodPost
-				path = fmt.Sprintf("/%s/%s", scope.Key().Code(), concept.Plural())
+				path = fmt.Sprintf("/%s/%s", scope.Code, concept.Plural)
 			case graph.UpdateOperationType:
 				method = http.MethodPut
-				path = fmt.Sprintf("/%s/%s/{id}", scope.Key().Code(), concept.Plural())
+				path = fmt.Sprintf("/%s/%s/{id}", scope.Code, concept.Plural)
 			case graph.DeleteOperationType:
 				method = http.MethodDelete
-				path = fmt.Sprintf("/%s/%s/{id}", scope.Key().Code(), concept.Plural())
+				path = fmt.Sprintf("/%s/%s/{id}", scope.Code, concept.Plural)
 			}
 
 			if method != "" {
