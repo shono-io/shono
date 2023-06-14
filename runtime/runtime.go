@@ -7,6 +7,7 @@ import (
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/benthosdev/benthos/v4/public/service/servicetest"
 	"github.com/shono-io/shono/graph"
+	"github.com/shono-io/shono/storage"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -14,6 +15,8 @@ import (
 )
 
 func Test(reg graph.Registry, logLevel string) (err error) {
+	storage.Register(reg)
+
 	// -- generate the benthos configuration
 	gen := NewGenerator()
 	output, err := gen.Generate(context.Background(), reg)
@@ -38,6 +41,8 @@ func Test(reg graph.Registry, logLevel string) (err error) {
 }
 
 func Run(reg graph.Registry) (err error) {
+	storage.Register(reg)
+
 	// -- generate the benthos configuration
 	gen := NewGenerator()
 	output, err := gen.Generate(context.Background(), reg)

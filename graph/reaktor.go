@@ -4,14 +4,63 @@ import (
 	"fmt"
 )
 
+func NewReaktorSpec(code string) *ReaktorSpec {
+	return &ReaktorSpec{
+		reaktor: &Reaktor{Code: code, Status: StatusExperimental},
+	}
+}
+
+type ReaktorSpec struct {
+	reaktor *Reaktor
+}
+
+func (r *ReaktorSpec) Summary(summary string) *ReaktorSpec {
+	r.reaktor.Summary = summary
+	return r
+}
+
+func (r *ReaktorSpec) Docs(docs string) *ReaktorSpec {
+	r.reaktor.Docs = docs
+	return r
+}
+
+func (r *ReaktorSpec) Stable() *ReaktorSpec {
+	r.reaktor.Status = StatusStable
+	return r
+}
+
+func (r *ReaktorSpec) Beta() *ReaktorSpec {
+	r.reaktor.Status = StatusBeta
+	return r
+}
+
+func (r *ReaktorSpec) Experimental() *ReaktorSpec {
+	r.reaktor.Status = StatusExperimental
+	return r
+}
+
+func (r *ReaktorSpec) Deprecated() *ReaktorSpec {
+	r.reaktor.Status = StatusDeprecated
+	return r
+}
+
+func (r *ReaktorSpec) On(scopeCode, conceptCode, eventCode string) *ReaktorSpec {
+
+}
+
 type Reaktor struct {
-	ReaktorReference
-	Name    string          `yaml:"name"`
-	Docs    string          `yaml:"docs"`
+	Code    string `yaml:"code"`
+	Status  Status `yaml:"status"`
+	Summary string `yaml:"summary"`
+	Docs    string `yaml:"docs"`
+
 	Input   *EventReference `yaml:"input"`
 	Logic   []Logic         `yaml:"logic"`
 	Outputs []ReaktorOutput `yaml:"outputs"`
 	Tests   []ReaktorTest   `yaml:"tests"`
+}
+
+type Trigger interface {
 }
 
 type ReaktorOutput struct {
@@ -93,6 +142,8 @@ func (b *ReaktorBuilder) Build() (*Reaktor, error) {
 			Docs: docs,
 		})
 	}
+
+	b.reaktor.Code = fmt.Sprintf("on(%s)", b.reaktor.Input.String())
 
 	return &b.reaktor, nil
 }

@@ -130,7 +130,7 @@ func topicsFromEventIds(eventIds []graph.EventReference, strategy graph.LogStrat
 	for _, v := range eventIds {
 		switch strategy {
 		case graph.PerScopeLogStrategy:
-			topics[fmt.Sprintf("%s__%s", v.ScopeCode, v.ConceptCode)] = true
+			topics[fmt.Sprintf("%s", v.ScopeCode)] = true
 		default:
 			logrus.Panicf("unknown log strategy: %v", strategy)
 		}
