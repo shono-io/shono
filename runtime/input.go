@@ -2,10 +2,11 @@ package runtime
 
 import (
 	"context"
+	"github.com/shono-io/shono/core"
 	"github.com/shono-io/shono/graph"
 )
 
-func (g *Generator) generateInput(ctx context.Context, result map[string]any, reg graph.Registry, scope graph.Scope, concept graph.Concept, reaktors []graph.Reaktor) (err error) {
+func (g *Generator) generateInput(ctx context.Context, result map[string]any, reg graph.Registry, scope core.Scope, concept core.Concept, reaktors []graph.Reaktor) (err error) {
 	var events []graph.EventReference
 	for _, reaktor := range reaktors {
 		events = append(events, *reaktor.Input)

@@ -1,5 +1,7 @@
 package graph
 
+import "github.com/shono-io/shono/core"
+
 //var ScopeSpec = service.NewConfigSpec().
 //	Beta().
 //	Categories("Core").
@@ -28,7 +30,7 @@ type Scope struct {
 	Docs    string `yaml:"docs"`
 	Status  Status `yaml:"status"`
 
-	Concepts []Concept `yaml:"concepts"`
+	Concepts []core.Concept `yaml:"concepts"`
 }
 
 func (s *ScopeSpec) Summary(summary string) *ScopeSpec {

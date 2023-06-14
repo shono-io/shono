@@ -1,6 +1,9 @@
 package local
 
-import "github.com/shono-io/shono/graph"
+import (
+	"github.com/shono-io/shono/core"
+	"github.com/shono-io/shono/graph"
+)
 
 type Registry struct {
 	backboneRepo
@@ -19,7 +22,7 @@ func WithBackbone(bb graph.Backbone) Opt {
 	}
 }
 
-func WithScope(scope ...graph.Scope) Opt {
+func WithScope(scope ...core.Scope) Opt {
 	return func(r *Registry) {
 		for _, v := range scope {
 			r.scopes[v.Code] = v
@@ -27,7 +30,7 @@ func WithScope(scope ...graph.Scope) Opt {
 	}
 }
 
-func WithConcept(concept ...graph.Concept) Opt {
+func WithConcept(concept ...core.Concept) Opt {
 	return func(r *Registry) {
 		for _, v := range concept {
 			r.concepts[v.ConceptReference.String()] = v
@@ -63,10 +66,10 @@ func NewRegistry(opts ...Opt) *Registry {
 	r := &Registry{
 		backboneRepo: backboneRepo{},
 		scopeRepo: scopeRepo{
-			scopes: map[string]graph.Scope{},
+			scopes: map[string]core.Scope{},
 		},
 		conceptRepo: conceptRepo{
-			concepts: map[string]graph.Concept{},
+			concepts: map[string]core.Concept{},
 		},
 		eventRepo: eventRepo{
 			events: map[string]graph.Event{},

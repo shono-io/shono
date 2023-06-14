@@ -2,6 +2,7 @@ package local
 
 import (
 	"github.com/shono-io/shono/backbone"
+	"github.com/shono-io/shono/core"
 	"github.com/shono-io/shono/graph"
 	"github.com/shono-io/shono/storage"
 	"golang.org/x/text/cases"
@@ -19,13 +20,13 @@ type spec struct {
 }
 
 type scopeSpec struct {
-	graph.Scope `yaml:",inline"`
-	Concepts    map[string]conceptSpec `yaml:"concepts"`
+	core.Scope `yaml:",inline"`
+	Concepts   map[string]conceptSpec `yaml:"concepts"`
 }
 
 type conceptSpec struct {
-	graph.Concept `yaml:",inline"`
-	Events        map[string]eventSpec `yaml:"events"`
+	core.Concept `yaml:",inline"`
+	Events       map[string]eventSpec `yaml:"events"`
 }
 
 type eventSpec struct {

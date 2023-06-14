@@ -3,10 +3,11 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/shono-io/shono/core"
 	"github.com/shono-io/shono/graph"
 )
 
-func (g *Generator) generateTests(ctx context.Context, result map[string]any, reg graph.Registry, scope graph.Scope, concept graph.Concept, reaktors []graph.Reaktor) (err error) {
+func (g *Generator) generateTests(ctx context.Context, result map[string]any, reg graph.Registry, scope core.Scope, concept core.Concept, reaktors []graph.Reaktor) (err error) {
 	var tests []map[string]any
 
 	for _, reaktor := range reaktors {

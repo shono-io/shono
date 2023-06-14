@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"github.com/shono-io/shono/commons"
+	"github.com/shono-io/shono/core"
 )
 
 type RequestType string
@@ -28,27 +28,27 @@ func WithRequestName(name string) RequestOpt {
 	}
 }
 
-func NewGetRequest(storeKey commons.Key, opts ...RequestOpt) Request {
+func NewGetRequest(storeKey core.Reference, opts ...RequestOpt) Request {
 	return newRequest(GetOperationType, storeKey, nil, opts...)
 }
 
-func NewListRequest(storeKey commons.Key, opts ...RequestOpt) Request {
+func NewListRequest(storeKey core.Reference, opts ...RequestOpt) Request {
 	return newRequest(ListOperationType, storeKey, nil, opts...)
 }
 
-func NewAddRequest(eventKey commons.Key, opts ...RequestOpt) Request {
+func NewAddRequest(eventKey core.Reference, opts ...RequestOpt) Request {
 	return newRequest(CreateOperationType, nil, eventKey, opts...)
 }
 
-func NewSetRequest(eventKey commons.Key, opts ...RequestOpt) Request {
+func NewSetRequest(eventKey core.Reference, opts ...RequestOpt) Request {
 	return newRequest(UpdateOperationType, nil, eventKey, opts...)
 }
 
-func NewDeleteRequest(eventKey commons.Key, opts ...RequestOpt) Request {
+func NewDeleteRequest(eventKey core.Reference, opts ...RequestOpt) Request {
 	return newRequest(DeleteOperationType, nil, eventKey, opts...)
 }
 
-func newRequest(kind RequestType, storeKey commons.Key, eventKey commons.Key, opts ...RequestOpt) Request {
+func newRequest(kind RequestType, storeKey core.Reference, eventKey core.Reference, opts ...RequestOpt) Request {
 	result := Request{
 		Kind:     kind,
 		StoreKey: storeKey,
@@ -67,26 +67,26 @@ type Request struct {
 	Name        string
 	Description string
 
-	StoreKey commons.Key
-	EventKey commons.Key
+	StoreKey core.Reference
+	EventKey core.Reference
 }
 
 type GetRequest struct {
-	StoreKey commons.Key
+	StoreKey core.Reference
 }
 
 type ListRequest struct {
-	StoreKey commons.Key
+	StoreKey core.Reference
 }
 
 type AddRequest struct {
-	EventKey commons.Key
+	EventKey core.Reference
 }
 
 type SetRequest struct {
-	EventKey commons.Key
+	EventKey core.Reference
 }
 
 type DeleteRequest struct {
-	EventKey commons.Key
+	EventKey core.Reference
 }

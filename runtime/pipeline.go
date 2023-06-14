@@ -3,12 +3,13 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/shono-io/shono/core"
 	"github.com/shono-io/shono/dsl"
 	"github.com/shono-io/shono/graph"
 	"strings"
 )
 
-func (g *Generator) generatePipeline(ctx context.Context, result map[string]any, reg graph.Registry, scope graph.Scope, concept graph.Concept, reaktors []graph.Reaktor) (err error) {
+func (g *Generator) generatePipeline(ctx context.Context, result map[string]any, reg graph.Registry, scope core.Scope, concept core.Concept, reaktors []graph.Reaktor) (err error) {
 	result["pipeline"] = map[string]any{
 		"threads": g.threads,
 	}
@@ -16,7 +17,7 @@ func (g *Generator) generatePipeline(ctx context.Context, result map[string]any,
 	return g.generateProcessors(ctx, result["pipeline"].(map[string]any), reg, scope, concept, reaktors)
 }
 
-func (g *Generator) generateProcessors(ctx context.Context, result map[string]any, reg graph.Registry, scope graph.Scope, concept graph.Concept, reaktors []graph.Reaktor) (err error) {
+func (g *Generator) generateProcessors(ctx context.Context, result map[string]any, reg graph.Registry, scope core.Scope, concept core.Concept, reaktors []graph.Reaktor) (err error) {
 	var cases []map[string]any
 
 	for _, reaktor := range reaktors {
@@ -70,7 +71,7 @@ func toCase(ctx context.Context, reg graph.Registry, reaktor graph.Reaktor) (map
 
 func toProcessor(ctx context.Context, reg graph.Registry, l graph.Logic) (map[string]any, error) {
 	switch lt := l.(type) {
-	case dsl.CatchLogic:
+	case dsl.CatchLogicStep:
 		var elements []map[string]any
 		for _, el := range lt.Logics {
 			element, err := toProcessor(ctx, reg, el)
@@ -87,7 +88,7 @@ func toProcessor(ctx context.Context, reg graph.Registry, l graph.Logic) (map[st
 
 		return result, nil
 
-	case dsl.ConditionalLogic:
+	case dsl.ConditionalLogicStep:
 		result := make(map[string]any)
 
 		var cases []map[string]any
@@ -107,7 +108,7 @@ func toProcessor(ctx context.Context, reg graph.Registry, l graph.Logic) (map[st
 		return map[string]any{
 			"switch": cases,
 		}, nil
-	case dsl.CaseLogic:
+	case dsl.ConditionalCase:
 		var processors []map[string]any
 		for _, b := range lt.Logics {
 			// -- generate the element content
@@ -128,7 +129,7 @@ func toProcessor(ctx context.Context, reg graph.Registry, l graph.Logic) (map[st
 		}
 
 		return res, nil
-	case dsl.LogLogic:
+	case dsl.LogLogicStep:
 		result := map[string]any{
 			"level":   string(lt.Level),
 			"message": string(lt.Message),
@@ -146,7 +147,7 @@ func toProcessor(ctx context.Context, reg graph.Registry, l graph.Logic) (map[st
 		return map[string]any{
 			"log": result,
 		}, nil
-	case dsl.TransformLogic:
+	case dsl.TransformLogicStep:
 		mappings, err := mappingsToString(ctx, lt.Mappings)
 		if err != nil {
 			return nil, err
@@ -155,7 +156,7 @@ func toProcessor(ctx context.Context, reg graph.Registry, l graph.Logic) (map[st
 		return map[string]any{
 			"mapping": mappings,
 		}, nil
-	case dsl.StoreLogic:
+	case dsl.StoreLogicStep:
 		result := map[string]any{
 			"concept":   lt.Concept.String(),
 			"operation": lt.Operation,

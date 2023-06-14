@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
-	"github.com/shono-io/shono/commons"
+	"github.com/shono-io/shono/core"
 	"github.com/shono-io/shono/graph"
 	"strings"
 )
@@ -133,7 +133,7 @@ func (c arangodbClient) Close() error {
 	return nil
 }
 
-func (c arangodbClient) collectionForKey(ctx context.Context, key commons.Key) (driver.Collection, error) {
+func (c arangodbClient) collectionForKey(ctx context.Context, key core.Reference) (driver.Collection, error) {
 	return c.db.Collection(ctx, key.Kind())
 }
 

@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/shono-io/shono/core"
 	"github.com/shono-io/shono/graph"
 	"gopkg.in/yaml.v3"
 	"io/fs"
@@ -66,7 +67,7 @@ func (g *Generator) Generate(ctx context.Context, reg graph.Registry) (output *G
 	return output, nil
 }
 
-func (g *Generator) generateScope(ctx context.Context, out *GeneratorOutput, reg graph.Registry, scope graph.Scope) (err error) {
+func (g *Generator) generateScope(ctx context.Context, out *GeneratorOutput, reg graph.Registry, scope core.Scope) (err error) {
 	concepts, err := reg.ListConceptsForScope(scope.Code)
 	if err != nil {
 		return fmt.Errorf("failed to list concepts for scope %q: %w", scope.Code, err)
@@ -81,7 +82,7 @@ func (g *Generator) generateScope(ctx context.Context, out *GeneratorOutput, reg
 	return nil
 }
 
-func (g *Generator) generateConcept(ctx context.Context, out *GeneratorOutput, reg graph.Registry, scope graph.Scope, concept graph.Concept) (err error) {
+func (g *Generator) generateConcept(ctx context.Context, out *GeneratorOutput, reg graph.Registry, scope core.Scope, concept core.Concept) (err error) {
 	reaktors, err := reg.ListReaktorsForConcept(concept.ScopeCode, concept.Code)
 	if err != nil {
 		return fmt.Errorf("failed to list reaktors for concept: %w", err)
@@ -110,7 +111,7 @@ func (g *Generator) generateConcept(ctx context.Context, out *GeneratorOutput, r
 }
 
 type Stream struct {
-	Concept graph.Concept
+	Concept core.Concept
 	Unit    map[string]any
 }
 
@@ -129,7 +130,7 @@ type GeneratorOutput struct {
 	Streams []Stream
 }
 
-func (g *GeneratorOutput) RegisterUnit(concept graph.Concept, unit map[string]any) {
+func (g *GeneratorOutput) RegisterUnit(concept core.Concept, unit map[string]any) {
 	g.Streams = append(g.Streams, Stream{
 		Concept: concept,
 		Unit:    unit,

@@ -1,14 +1,14 @@
 package local
 
 import (
-	"github.com/shono-io/shono/graph"
+	"github.com/shono-io/shono/core"
 )
 
 type scopeRepo struct {
-	scopes map[string]graph.Scope
+	scopes map[string]core.Scope
 }
 
-func (s *scopeRepo) GetScope(code string) (*graph.Scope, error) {
+func (s *scopeRepo) GetScope(code string) (*core.Scope, error) {
 	res, fnd := s.scopes[code]
 	if !fnd {
 		return nil, nil
@@ -17,8 +17,8 @@ func (s *scopeRepo) GetScope(code string) (*graph.Scope, error) {
 	return &res, nil
 }
 
-func (s *scopeRepo) ListScopes() ([]graph.Scope, error) {
-	var res []graph.Scope
+func (s *scopeRepo) ListScopes() ([]core.Scope, error) {
+	var res []core.Scope
 	for _, v := range s.scopes {
 		res = append(res, v)
 	}
