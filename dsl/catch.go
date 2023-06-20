@@ -2,17 +2,17 @@ package dsl
 
 import (
 	"fmt"
-	"github.com/shono-io/shono/core"
+	"github.com/shono-io/shono/inventory"
 )
 
-func Catch(steps ...core.LogicStep) CatchLogicStep {
+func Catch(steps ...inventory.LogicStep) CatchLogicStep {
 	return CatchLogicStep{
 		Steps: steps,
 	}
 }
 
 type CatchLogicStep struct {
-	Steps []core.LogicStep
+	Steps []inventory.LogicStep
 }
 
 func (e CatchLogicStep) Kind() string {

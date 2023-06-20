@@ -30,8 +30,8 @@ var (
 
 type LogLogicStep struct {
 	Level   LogLevel `yaml:"level"`
-	Message string   `yaml:"message"`
-	Mapping *Mapping `yaml:"mapping"`
+	Message string   `yaml:"message,omitempty"`
+	Mapping *Mapping `yaml:"mapping,omitempty"`
 }
 
 func (e LogLogicStep) Kind() string {

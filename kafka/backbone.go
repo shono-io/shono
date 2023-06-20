@@ -2,20 +2,20 @@ package kafka
 
 import (
 	"github.com/mitchellh/mapstructure"
-	"github.com/shono-io/shono/core"
+	"github.com/shono-io/shono/inventory"
 )
 
 type Backbone struct {
 	Config Config
 }
 
-func (b Backbone) EventLogName(event core.Event) string {
+func (b Backbone) EventLogName(event inventory.Event) string {
 	// -- currently only supporting event logs on scope level
 	scopeReference := event.Concept().Parent()
 	return scopeReference.Code()
 }
 
-func (b Backbone) AsInput(id string, events ...core.Event) (map[string]any, error) {
+func (b Backbone) AsInput(id string, events ...inventory.Event) (map[string]any, error) {
 	var result map[string]any
 	if err := mapstructure.Decode(b.Config, &result); err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (b Backbone) AsInput(id string, events ...core.Event) (map[string]any, erro
 	}, nil
 }
 
-func (b Backbone) AsOutput(events ...core.Event) (map[string]any, error) {
+func (b Backbone) AsOutput(events ...inventory.Event) (map[string]any, error) {
 	var result map[string]any
 	if err := mapstructure.Decode(b.Config, &result); err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func topicOutput(config map[string]any, topic string) map[string]any {
 	}
 }
 
-func (b Backbone) topicsFromEventIds(events []core.Event) []string {
+func (b Backbone) topicsFromEventIds(events []inventory.Event) []string {
 	var result []string
 	fnd := map[string]bool{}
 

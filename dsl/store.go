@@ -2,12 +2,12 @@ package dsl
 
 import (
 	"fmt"
-	"github.com/shono-io/shono/core"
+	"github.com/shono-io/shono/commons"
 )
 
 func ListFromStore(scopeCode, conceptCode string, filters map[string]string) StoreLogicStep {
 	return StoreLogicStep{
-		Concept:   core.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
+		Concept:   commons.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
 		Operation: StoreOperationList,
 		Filters:   filters,
 	}
@@ -15,7 +15,7 @@ func ListFromStore(scopeCode, conceptCode string, filters map[string]string) Sto
 
 func GetFromStore(scopeCode, conceptCode string, key string) StoreLogicStep {
 	return StoreLogicStep{
-		Concept:   core.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
+		Concept:   commons.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
 		Operation: StoreOperationGet,
 		Key:       key,
 	}
@@ -23,7 +23,7 @@ func GetFromStore(scopeCode, conceptCode string, key string) StoreLogicStep {
 
 func AddToStore(scopeCode, conceptCode string, key string, value Mapping) StoreLogicStep {
 	return StoreLogicStep{
-		Concept:   core.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
+		Concept:   commons.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
 		Operation: StoreOperationAdd,
 		Key:       key,
 		Value:     &value,
@@ -32,7 +32,7 @@ func AddToStore(scopeCode, conceptCode string, key string, value Mapping) StoreL
 
 func SetInStore(scopeCode, conceptCode string, key string, value Mapping) StoreLogicStep {
 	return StoreLogicStep{
-		Concept:   core.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
+		Concept:   commons.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
 		Operation: StoreOperationSet,
 		Key:       key,
 		Value:     &value,
@@ -41,7 +41,7 @@ func SetInStore(scopeCode, conceptCode string, key string, value Mapping) StoreL
 
 func RemoveFromStore(scopeCode, conceptCode string, key string) StoreLogicStep {
 	return StoreLogicStep{
-		Concept:   core.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
+		Concept:   commons.NewReference("scopes", scopeCode).Child("concepts", conceptCode),
 		Operation: StoreOperationDelete,
 		Key:       key,
 	}
@@ -59,7 +59,7 @@ var (
 )
 
 type StoreLogicStep struct {
-	Concept   core.Reference
+	Concept   commons.Reference
 	Operation StoreOperation
 	Key       string
 	Value     *Mapping

@@ -1,11 +1,8 @@
 package dsl
 
-func Transform(language string, sourcecode string) TransformLogicStep {
+func Transform(mapping Mapping) TransformLogicStep {
 	return TransformLogicStep{
-		Mapping{
-			Language:   language,
-			Sourcecode: sourcecode,
-		},
+		mapping,
 	}
 }
 

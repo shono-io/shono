@@ -2,7 +2,7 @@ package dsl
 
 import (
 	"fmt"
-	"github.com/shono-io/shono/core"
+	"github.com/shono-io/shono/inventory"
 )
 
 func Switch(cases ...ConditionalCase) ConditionalLogicStep {
@@ -11,14 +11,14 @@ func Switch(cases ...ConditionalCase) ConditionalLogicStep {
 	}
 }
 
-func SwitchCase(check string, steps ...core.LogicStep) ConditionalCase {
+func SwitchCase(check string, steps ...inventory.LogicStep) ConditionalCase {
 	return ConditionalCase{
 		Check: check,
 		Steps: steps,
 	}
 }
 
-func SwitchDefault(steps ...core.LogicStep) ConditionalCase {
+func SwitchDefault(steps ...inventory.LogicStep) ConditionalCase {
 	return ConditionalCase{
 		Steps: steps,
 	}
@@ -47,8 +47,8 @@ func (e ConditionalLogicStep) Validate() error {
 }
 
 type ConditionalCase struct {
-	Check string
-	Steps []core.LogicStep
+	Check string                `yaml:"check,omitempty"`
+	Steps []inventory.LogicStep `yaml:"steps"`
 }
 
 func (e ConditionalCase) Validate() error {

@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"github.com/benthosdev/benthos/v4/public/bloblang"
 	"github.com/benthosdev/benthos/v4/public/service"
-	"github.com/shono-io/shono/graph"
+	"github.com/shono-io/shono/commons"
+	"github.com/shono-io/shono/inventory"
+	"github.com/shono-io/shono/system/arangodb"
+	"github.com/shono-io/shono/system/mongodb"
 	"github.com/sirupsen/logrus"
 )
 
-func Register(reg graph.Registry) {
+func Register(inv inventory.Inventory) {
 	err := service.RegisterProcessor("store", storeProcConfig(), func(conf *service.ParsedConfig, mgr *service.Resources) (service.Processor, error) {
-		return procFromConfig(reg, conf)
+		return procFromConfig(inv, conf)
 	})
 	if err != nil {
 		panic(err)
@@ -40,7 +43,7 @@ func storeProcConfig() *service.ConfigSpec {
 			Optional())
 }
 
-func procFromConfig(reg graph.Registry, conf *service.ParsedConfig) (proc *storeProc, err error) {
+func procFromConfig(inv inventory.Inventory, conf *service.ParsedConfig) (proc *storeProc, err error) {
 	proc = &storeProc{}
 
 	ck, err := conf.FieldString("concept")
@@ -49,29 +52,36 @@ func procFromConfig(reg graph.Registry, conf *service.ParsedConfig) (proc *store
 	}
 
 	// -- parse the concept reference
-	cr, err := graph.ParseConceptReference(ck)
+	cr, err := commons.ParseString(ck)
 	if err != nil {
 		return nil, fmt.Errorf("invalid concept reference: %w", err)
 	}
 
-	con, err := reg.GetConceptByReference(cr)
+	con, err := inv.ResolveConcept(cr)
 	if err != nil {
 		return nil, err
 	}
 
-	if con.Store == nil {
+	if con.Store() == nil {
 		return nil, fmt.Errorf("concept %q does not have a store defined", ck)
 	}
+	s := con.Store().Storage
 
-	s := reg.GetStorage(con.Store.StorageKey)
-	if s == nil {
-		return nil, fmt.Errorf("no storage with key %q", con.Store.StorageKey)
-	}
-
-	// -- get a client for the storage system
-	proc.cl, err = s.GetClient()
-	if err != nil {
-		return nil, fmt.Errorf("error getting client for storage system %q: %w", s.Key(), err)
+	switch s.Name {
+	case "arangodb":
+		cl, err := arangodb.NewClient(s.Config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create arangodb client: %w", err)
+		}
+		proc.cl = cl
+	case "mongodb":
+		cl, err := mongodb.NewClient(s.Config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create mongodb client: %w", err)
+		}
+		proc.cl = cl
+	default:
+		return nil, fmt.Errorf("unknown storage type %q", s.Name)
 	}
 
 	proc.operation, err = conf.FieldString("operation")
@@ -104,7 +114,7 @@ func procFromConfig(reg graph.Registry, conf *service.ParsedConfig) (proc *store
 }
 
 type storeProc struct {
-	cl         graph.StorageClient
+	cl         inventory.StorageClient
 	collection string
 
 	operation string
