@@ -36,6 +36,11 @@ func (b *ConceptBuilder) Status(status commons.Status) *ConceptBuilder {
 	return b
 }
 
+func (b *ConceptBuilder) Stored() *ConceptBuilder {
+	b.spec.Stored = true
+	return b
+}
+
 func (b *ConceptBuilder) Build() Concept {
 	return &concept{Spec: b.spec}
 }

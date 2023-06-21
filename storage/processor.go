@@ -9,13 +9,14 @@ import (
 	"github.com/shono-io/shono/commons"
 	"github.com/shono-io/shono/inventory"
 	"github.com/shono-io/shono/system/arangodb"
+	"github.com/shono-io/shono/system/memory"
 	"github.com/shono-io/shono/system/mongodb"
 	"github.com/sirupsen/logrus"
 )
 
-func Register(inv inventory.Inventory) {
+func Register(name string, cfg map[string]any, testMode bool) {
 	err := service.RegisterProcessor("store", storeProcConfig(), func(conf *service.ParsedConfig, mgr *service.Resources) (service.Processor, error) {
-		return procFromConfig(inv, conf)
+		return procFromConfig(name, cfg, conf, testMode)
 	})
 	if err != nil {
 		panic(err)
@@ -43,7 +44,7 @@ func storeProcConfig() *service.ConfigSpec {
 			Optional())
 }
 
-func procFromConfig(inv inventory.Inventory, conf *service.ParsedConfig) (proc *storeProc, err error) {
+func procFromConfig(name string, cfg map[string]any, conf *service.ParsedConfig, testMode bool) (proc *storeProc, err error) {
 	proc = &storeProc{}
 
 	ck, err := conf.FieldString("concept")
@@ -57,31 +58,30 @@ func procFromConfig(inv inventory.Inventory, conf *service.ParsedConfig) (proc *
 		return nil, fmt.Errorf("invalid concept reference: %w", err)
 	}
 
-	con, err := inv.ResolveConcept(cr)
-	if err != nil {
-		return nil, err
-	}
+	// -- we will use the code of the concept as the collection name
+	proc.collection = cr.Code()
 
-	if con.Store() == nil {
-		return nil, fmt.Errorf("concept %q does not have a store defined", ck)
-	}
-	s := con.Store().Storage
-
-	switch s.Name {
-	case "arangodb":
-		cl, err := arangodb.NewClient(s.Config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create arangodb client: %w", err)
+	if testMode {
+		proc.cl = memory.NewClient(map[string]any{
+			memory.StorageIdField: ck,
+		})
+	} else {
+		switch name {
+		case "arangodb":
+			cl, err := arangodb.NewClient(cfg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create arangodb client: %w", err)
+			}
+			proc.cl = cl
+		case "mongodb":
+			cl, err := mongodb.NewClient(cfg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create mongodb client: %w", err)
+			}
+			proc.cl = cl
+		default:
+			return nil, fmt.Errorf("unknown storage type %q", cfg)
 		}
-		proc.cl = cl
-	case "mongodb":
-		cl, err := mongodb.NewClient(s.Config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create mongodb client: %w", err)
-		}
-		proc.cl = cl
-	default:
-		return nil, fmt.Errorf("unknown storage type %q", s.Name)
 	}
 
 	proc.operation, err = conf.FieldString("operation")

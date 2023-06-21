@@ -7,22 +7,17 @@ import (
 type Concept interface {
 	Node
 	Scope() commons.Reference
-	Store() *ConceptStore
-}
-
-type ConceptStore struct {
-	Storage    Storage
-	Collection string
+	Stored() bool
 }
 
 type ConceptSpec struct {
-	NodeSpec
-	Scope commons.Reference
-	Store *ConceptStore
+	NodeSpec `yaml:",inline"`
+	Scope    commons.Reference
+	Stored   bool
 }
 
 type concept struct {
-	Spec ConceptSpec
+	Spec ConceptSpec `yaml:",inline"`
 }
 
 func (c *concept) Code() string {
@@ -49,6 +44,6 @@ func (c *concept) Reference() commons.Reference {
 	return c.Scope().Child("concepts", c.Code())
 }
 
-func (c *concept) Store() *ConceptStore {
-	return c.Spec.Store
+func (c *concept) Stored() bool {
+	return c.Spec.Stored
 }

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func NewArtifact(owner commons.Reference, t commons.ArtifactType, logic artifacts.GeneratedLogic, input inventory.Input, output inventory.Output, error inventory.Output, storages []inventory.Storage) (*Artifact, error) {
+func NewArtifact(owner commons.Reference, t commons.ArtifactType, concept *inventory.Concept, logic artifacts.GeneratedLogic, input inventory.Input, output inventory.Output, error inventory.Output, storages []artifacts.Storage) (*Artifact, error) {
 	return &Artifact{
 		Spec: ArtifactSpec{
 			Owner:     owner,
@@ -20,6 +20,7 @@ func NewArtifact(owner commons.Reference, t commons.ArtifactType, logic artifact
 			Output:    output,
 			Error:     error,
 			Storages:  storages,
+			Concept:   concept,
 		},
 	}, nil
 }
@@ -34,7 +35,9 @@ type ArtifactSpec struct {
 	Output inventory.Output
 	Error  inventory.Output
 
-	Storages []inventory.Storage
+	Concept *inventory.Concept
+
+	Storages []artifacts.Storage
 
 	Logic artifacts.GeneratedLogic
 }
@@ -79,6 +82,10 @@ func (a *Artifact) Reference() commons.Reference {
 	return a.Owner().Child("artifacts", a.Key())
 }
 
-func (a *Artifact) Storages() []inventory.Storage {
+func (a *Artifact) Storages() []artifacts.Storage {
 	return a.Spec.Storages
+}
+
+func (a *Artifact) Concept() *inventory.Concept {
+	return a.Spec.Concept
 }

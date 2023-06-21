@@ -35,5 +35,5 @@ func (e *ExtractorGenerator) Generate(inv inventory.Inventory, extractorRef comm
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(extractorRef.Parent(), commons.ArtifactTypeExtractor, *logic, inp, extractor.Output(), dlq, nil)
+	return NewArtifact(extractorRef.Parent(), commons.ArtifactTypeExtractor, nil, *logic, inp, extractor.Output(), dlq, nil)
 }

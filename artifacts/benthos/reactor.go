@@ -51,9 +51,9 @@ func (g *ConceptGenerator) Generate(inv inventory.Inventory, conceptRef commons.
 		return nil, fmt.Errorf("dlq: %w", err)
 	}
 
-	var storages []inventory.Storage
-	if concept.Store() != nil {
-		storages = append(storages, concept.Store().Storage)
+	var storages []artifacts.Storage
+	if concept.Stored() {
+		storages = append(storages, artifacts.Storage{Collection: fmt.Sprintf("%s__%s", conceptRef.Parent().Code(), conceptRef.Code())})
 	}
 
 	l, err := generateLogic(logic)
@@ -61,7 +61,7 @@ func (g *ConceptGenerator) Generate(inv inventory.Inventory, conceptRef commons.
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(conceptRef, commons.ArtifactTypeConcept, *l, inp, out, dlq, storages)
+	return NewArtifact(conceptRef, commons.ArtifactTypeConcept, &concept, *l, inp, out, dlq, storages)
 }
 
 func generateWrapperLogic(reactors []inventory.Reactor) (inventory.Logic, error) {

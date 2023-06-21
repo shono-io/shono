@@ -35,5 +35,5 @@ func (i *InjectorGenerator) Generate(inv inventory.Inventory, injectorRef common
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(injectorRef.Parent(), commons.ArtifactTypeInjector, *logic, injector.Input(), out, dlq, nil)
+	return NewArtifact(injectorRef.Parent(), commons.ArtifactTypeInjector, nil, *logic, injector.Input(), out, dlq, nil)
 }

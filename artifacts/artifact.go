@@ -15,12 +15,19 @@ type GeneratedLogic struct {
 	Tests []map[string]any `yaml:"tests,omitempty"`
 }
 
+type Storage struct {
+	Collection string
+}
+
 type Artifact interface {
-	Owner() commons.Reference
+	Reference() commons.Reference
 	Key() string
+
+	Owner() commons.Reference
 	Timestamp() time.Time
 	Type() commons.ArtifactType
-	Reference() commons.Reference
+
+	Concept() *inventory.Concept
 
 	Logic() GeneratedLogic
 
@@ -28,7 +35,7 @@ type Artifact interface {
 	Output() inventory.Output
 	Error() inventory.Output
 
-	Storages() []inventory.Storage
+	Storages() []Storage
 }
 
 type ArtifactLoader interface {

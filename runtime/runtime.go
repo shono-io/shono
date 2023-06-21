@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/shono-io/shono/artifacts"
+	"github.com/shono-io/shono/storage"
 )
 
 type RunConfig struct {
@@ -14,9 +15,21 @@ type RunConfig struct {
 	Input  map[string]any `json:"input" yaml:"input"`
 	Output map[string]any `json:"output" yaml:"output"`
 	Dlq    map[string]any `json:"dlq" yaml:"dlq"`
+
+	Storage StorageConfig `json:"storage" yaml:"storage"`
+}
+
+type StorageConfig struct {
+	Name   string         `json:"name" yaml:"name"`
+	Config map[string]any `json:"config" yaml:"config"`
 }
 
 func RunArtifact(cfg RunConfig, artifact artifacts.Artifact) error {
+	// -- register the store
+	if cfg.Storage.Name != "" {
+		storage.Register(cfg.Storage.Name, cfg.Storage.Config, false)
+	}
+
 	// -- configure the artifact input
 	inp := artifact.Input()
 	if cfg.Input != nil {
