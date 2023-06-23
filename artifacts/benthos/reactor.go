@@ -15,7 +15,7 @@ func NewConceptGenerator() *ConceptGenerator {
 type ConceptGenerator struct {
 }
 
-func (g *ConceptGenerator) Generate(inv inventory.Inventory, conceptRef commons.Reference) (artifacts.Artifact, error) {
+func (g *ConceptGenerator) Generate(artifactId string, inv inventory.Inventory, conceptRef commons.Reference) (artifacts.Artifact, error) {
 	concept, err := inv.ResolveConcept(conceptRef)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (g *ConceptGenerator) Generate(inv inventory.Inventory, conceptRef commons.
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(conceptRef, commons.ArtifactTypeConcept, &concept, *l, inp, out, dlq, storages)
+	return NewArtifact(conceptRef, commons.ArtifactTypeConcept, *l, inp, out, dlq, storages, WithConcept(&concept), WithKey(artifactId))
 }
 
 func generateWrapperLogic(reactors []inventory.Reactor) (inventory.Logic, error) {

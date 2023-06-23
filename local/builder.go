@@ -2,7 +2,6 @@ package local
 
 import (
 	"github.com/shono-io/shono/inventory"
-	"github.com/shono-io/shono/runtime"
 )
 
 func NewInventory() *EnvironmentBuilder {
@@ -11,7 +10,6 @@ func NewInventory() *EnvironmentBuilder {
 			scopes:     map[string]inventory.Scope{},
 			concepts:   map[string]inventory.Concept{},
 			events:     map[string]inventory.Event{},
-			systems:    map[string]runtime.System{},
 			injectors:  map[string]inventory.Injector{},
 			extractors: map[string]inventory.Extractor{},
 			reactors:   map[string]inventory.Reactor{},
@@ -35,11 +33,6 @@ func (e *EnvironmentBuilder) Concept(concept inventory.Concept) *EnvironmentBuil
 
 func (e *EnvironmentBuilder) Event(event inventory.Event) *EnvironmentBuilder {
 	e.environment.events[event.Reference().String()] = event
-	return e
-}
-
-func (e *EnvironmentBuilder) System(system runtime.System) *EnvironmentBuilder {
-	e.environment.systems[system.Reference().String()] = system
 	return e
 }
 

@@ -6,6 +6,10 @@ import (
 )
 
 func ParseString(fullKey string) (Reference, error) {
+	if (fullKey == "") || (fullKey == "/") {
+		return nil, fmt.Errorf("empty reference")
+	}
+
 	return Parse(strings.Split(strings.TrimPrefix(fullKey, "/"), "/")...)
 }
 
@@ -19,7 +23,7 @@ func Parse(parts ...string) (Reference, error) {
 		sections = append(sections, ReferenceSection{Kind: parts[i], Code: parts[i+1]})
 	}
 
-	return reference{sections}, nil
+	return &reference{sections}, nil
 }
 
 type ReferenceSection struct {
@@ -40,22 +44,22 @@ type reference struct {
 }
 
 func NewReference(kind, code string) Reference {
-	return reference{[]ReferenceSection{{Kind: kind, Code: code}}}
+	return &reference{[]ReferenceSection{{Kind: kind, Code: code}}}
 }
 
-func (k reference) Parent() Reference {
+func (k *reference) Parent() Reference {
 	if len(k.sections) == 0 {
 		return nil
 	}
 
-	return reference{(k.sections)[:len(k.sections)-1]}
+	return &reference{(k.sections)[:len(k.sections)-1]}
 }
 
-func (k reference) Child(kind, code string) Reference {
-	return reference{append(k.sections, ReferenceSection{Kind: kind, Code: code})}
+func (k *reference) Child(kind, code string) Reference {
+	return &reference{append(k.sections, ReferenceSection{Kind: kind, Code: code})}
 }
 
-func (k reference) Code() string {
+func (k *reference) Code() string {
 	if len(k.sections) == 0 {
 		return ""
 	}
@@ -63,7 +67,7 @@ func (k reference) Code() string {
 	return k.sections[len(k.sections)-1].Code
 }
 
-func (k reference) Kind() string {
+func (k *reference) Kind() string {
 	if len(k.sections) == 0 {
 		return ""
 	}
@@ -71,7 +75,7 @@ func (k reference) Kind() string {
 	return k.sections[len(k.sections)-1].Kind
 }
 
-func (k reference) String() string {
+func (k *reference) String() string {
 	if len(k.sections) == 0 {
 		return ""
 	}
@@ -83,16 +87,35 @@ func (k reference) String() string {
 	return s[:len(s)-1]
 }
 
-func (k reference) MarshalJSON() ([]byte, error) {
+func (k *reference) MarshalJSON() ([]byte, error) {
 	return []byte(k.String()), nil
 }
 
-func (k reference) UnmarshalJSON(data []byte) error {
-	parsed, err := Parse(string(data))
+func (k *reference) UnmarshalJSON(data []byte) error {
+	parsed, err := ParseString(string(data))
 	if err != nil {
 		return err
 	}
 
-	k.sections = parsed.(reference).sections
+	k.sections = parsed.(*reference).sections
 	return nil
+}
+
+func (k *reference) UnmarshalYAML(f func(interface{}) error) error {
+	var s string
+	if err := f(&s); err != nil {
+		return err
+	}
+
+	parsed, err := ParseString(s)
+	if err != nil {
+		return err
+	}
+
+	k.sections = parsed.(*reference).sections
+	return nil
+}
+
+func (k *reference) MarshalYAML() (interface{}, error) {
+	return k.String(), nil
 }

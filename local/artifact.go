@@ -3,48 +3,19 @@ package local
 import (
 	"fmt"
 	"github.com/hack-pad/hackpadfs"
-	"github.com/hairyhenderson/go-fsimpl"
-	"github.com/hairyhenderson/go-fsimpl/blobfs"
-	"github.com/hairyhenderson/go-fsimpl/filefs"
-	"github.com/hairyhenderson/go-fsimpl/gitfs"
-	"github.com/hairyhenderson/go-fsimpl/httpfs"
 	"github.com/shono-io/shono/artifacts"
+	"github.com/shono-io/shono/artifacts/benthos"
 	"github.com/shono-io/shono/commons"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"io"
-	"net/url"
 	gos "os"
-	"strings"
 )
 
 func LoadArtifact(uri string) (artifacts.Artifact, error) {
-	mux := fsimpl.NewMux()
-	mux.Add(filefs.FS)
-	mux.Add(blobfs.FS)
-	mux.Add(gitfs.FS)
-	mux.Add(httpfs.FS)
-
-	fs, err := mux.Lookup(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	u, err := url.Parse(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	p := strings.TrimSuffix(u.Path, ".yaml")
-	ref, err := commons.ParseString(p)
-	if err != nil {
-		return nil, err
-	}
-
-	return (&ArtifactLoader{filesystem: fs}).LoadArtifact(ref)
+	return (&ArtifactLoader{filesystem: gos.DirFS(".")}).LoadArtifact(uri)
 }
 
-func DumpArtifact(dir string, artifact artifacts.Artifact) error {
+func DumpArtifact(artifact artifacts.Artifact) error {
 	return (&ArtifactDumper{}).StoreArtifact(artifact)
 }
 
@@ -52,10 +23,7 @@ type ArtifactLoader struct {
 	filesystem hackpadfs.FS
 }
 
-func (a *ArtifactLoader) LoadArtifact(ref commons.Reference) (artifacts.Artifact, error) {
-	_, filename := referenceToFsName(ref)
-	logrus.Tracef("loading artifact %q from %s", ref, filename)
-
+func (a *ArtifactLoader) LoadArtifact(filename string) (artifacts.Artifact, error) {
 	f, err := a.filesystem.Open(filename)
 	if err != nil {
 		return nil, err
@@ -80,21 +48,14 @@ func (a *ArtifactDumper) StoreArtifact(artifact artifacts.Artifact) error {
 		return err
 	}
 
-	dir, filename := referenceToFsName(artifact.Reference())
-
-	// -- make sure the directory exists
-	if err := gos.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
+	filename := referenceToFsName(artifact.Reference())
 
 	// -- create and write the file
 	return gos.WriteFile(filename, b, 0644)
 }
 
-func referenceToFsName(ref commons.Reference) (dir string, filename string) {
-	dir = fmt.Sprintf("%s/%s", ref.Parent().String(), ref.Kind())
-	filename = fmt.Sprintf("%s.yaml", ref.Code())
-	return dir, filename
+func referenceToFsName(ref commons.Reference) string {
+	return fmt.Sprintf("%s.yaml", ref.Code())
 }
 
 func encodeArtifact(artifact artifacts.Artifact) ([]byte, error) {
@@ -102,10 +63,10 @@ func encodeArtifact(artifact artifacts.Artifact) ([]byte, error) {
 }
 
 func decodeArtifact(b []byte) (artifacts.Artifact, error) {
-	var result artifacts.Artifact
+	var result benthos.Artifact
 	if err := yaml.Unmarshal(b, &result); err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return result, nil
+	return &result, nil
 }

@@ -8,8 +8,22 @@ import (
 	"time"
 )
 
-func NewArtifact(owner commons.Reference, t commons.ArtifactType, concept *inventory.Concept, logic artifacts.GeneratedLogic, input inventory.Input, output inventory.Output, error inventory.Output, storages []artifacts.Storage) (*Artifact, error) {
-	return &Artifact{
+type Opt func(a *ArtifactSpec)
+
+func WithKey(key string) Opt {
+	return func(a *ArtifactSpec) {
+		a.Key = key
+	}
+}
+
+func WithConcept(concept *inventory.Concept) Opt {
+	return func(a *ArtifactSpec) {
+		a.Concept = concept
+	}
+}
+
+func NewArtifact(owner commons.Reference, t commons.ArtifactType, logic artifacts.GeneratedLogic, input inventory.Input, output inventory.Output, error inventory.Output, storages []artifacts.Storage, opts ...Opt) (*Artifact, error) {
+	res := &Artifact{
 		Spec: ArtifactSpec{
 			Owner:     owner,
 			Key:       xid.New().String(),
@@ -20,9 +34,15 @@ func NewArtifact(owner commons.Reference, t commons.ArtifactType, concept *inven
 			Output:    output,
 			Error:     error,
 			Storages:  storages,
-			Concept:   concept,
+			Concept:   nil,
 		},
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(&res.Spec)
+	}
+
+	return res, nil
 }
 
 type ArtifactSpec struct {
@@ -39,11 +59,13 @@ type ArtifactSpec struct {
 
 	Storages []artifacts.Storage
 
-	Logic artifacts.GeneratedLogic
+	InputEvents  []inventory.Event `yaml:"input_events,omitempty"`
+	Logic        artifacts.GeneratedLogic
+	OutputEvents []inventory.Event `yaml:"output_events,omitempty"`
 }
 
 type Artifact struct {
-	Spec ArtifactSpec
+	Spec ArtifactSpec `yaml:",inline"`
 }
 
 func (a *Artifact) Logic() artifacts.GeneratedLogic {
@@ -88,4 +110,12 @@ func (a *Artifact) Storages() []artifacts.Storage {
 
 func (a *Artifact) Concept() *inventory.Concept {
 	return a.Spec.Concept
+}
+
+func (a *Artifact) InputEvents() []inventory.Event {
+	return a.Spec.InputEvents
+}
+
+func (a *Artifact) OutputEvents() []inventory.Event {
+	return a.Spec.OutputEvents
 }

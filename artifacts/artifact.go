@@ -31,6 +31,9 @@ type Artifact interface {
 
 	Logic() GeneratedLogic
 
+	InputEvents() []inventory.Event
+	OutputEvents() []inventory.Event
+
 	Input() inventory.Input
 	Output() inventory.Output
 	Error() inventory.Output

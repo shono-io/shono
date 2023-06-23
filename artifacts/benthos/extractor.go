@@ -14,7 +14,7 @@ func NewExtractorGenerator() *ExtractorGenerator {
 type ExtractorGenerator struct {
 }
 
-func (e *ExtractorGenerator) Generate(inv inventory.Inventory, extractorRef commons.Reference) (artifacts.Artifact, error) {
+func (e *ExtractorGenerator) Generate(artifactId string, inv inventory.Inventory, extractorRef commons.Reference) (artifacts.Artifact, error) {
 	extractor, err := inv.ResolveExtractor(extractorRef)
 	if err != nil {
 		return nil, err
@@ -35,5 +35,5 @@ func (e *ExtractorGenerator) Generate(inv inventory.Inventory, extractorRef comm
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(extractorRef.Parent(), commons.ArtifactTypeExtractor, nil, *logic, inp, extractor.Output(), dlq, nil)
+	return NewArtifact(extractorRef.Parent(), commons.ArtifactTypeExtractor, *logic, inp, extractor.Output(), dlq, nil, WithKey(artifactId))
 }

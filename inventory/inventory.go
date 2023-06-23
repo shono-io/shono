@@ -11,9 +11,6 @@ type Inventory interface {
 	ResolveInjector(ref commons.Reference) (Injector, error)
 	ResolveExtractor(ref commons.Reference) (Extractor, error)
 
-	//ResolveStorage(ref commons.Reference) (Storage, error)
-	//ResolveSystem(ref commons.Reference) (System, error)
-
 	ListReactorsForConcept(conceptRef commons.Reference) ([]Reactor, error)
 }
 

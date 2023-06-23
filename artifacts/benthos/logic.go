@@ -5,6 +5,7 @@ import (
 	"github.com/shono-io/shono/artifacts"
 	"github.com/shono-io/shono/dsl"
 	"github.com/shono-io/shono/inventory"
+	"strings"
 )
 
 func generateLogic(logic inventory.Logic) (*artifacts.GeneratedLogic, error) {
@@ -117,7 +118,7 @@ func generateLogLogicStep(step dsl.LogLogicStep) (map[string]any, error) {
 	if step.Mapping != nil {
 		switch step.Mapping.Language {
 		case "bloblang":
-			result["fields_mapping"] = step.Mapping.Sourcecode
+			result["fields_mapping"] = strings.TrimSpace(step.Mapping.Sourcecode)
 		default:
 			return nil, fmt.Errorf("unknown mapping language: %s", step.Mapping.Language)
 		}
@@ -180,7 +181,7 @@ func generateStoreLogicStep(step dsl.StoreLogicStep) (map[string]any, error) {
 	if step.Value != nil {
 		switch step.Value.Language {
 		case "bloblang":
-			result["value"] = step.Value.Sourcecode
+			result["value"] = strings.TrimSpace(step.Value.Sourcecode)
 		default:
 			return nil, fmt.Errorf("unknown mapping language: %s", step.Value.Language)
 		}
@@ -200,7 +201,7 @@ func generateTransformLogicStep(step dsl.TransformLogicStep) (map[string]any, er
 
 	switch step.Mapping.Language {
 	case "bloblang":
-		result["mapping"] = step.Mapping.Sourcecode
+		result["mapping"] = strings.TrimSpace(step.Mapping.Sourcecode)
 	default:
 		return nil, fmt.Errorf("unknown mapping language: %s", step.Mapping.Language)
 	}

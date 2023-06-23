@@ -14,7 +14,7 @@ func NewInjectorGenerator() *InjectorGenerator {
 type InjectorGenerator struct {
 }
 
-func (i *InjectorGenerator) Generate(inv inventory.Inventory, injectorRef commons.Reference) (artifacts.Artifact, error) {
+func (i *InjectorGenerator) Generate(artifactId string, inv inventory.Inventory, injectorRef commons.Reference) (artifacts.Artifact, error) {
 	injector, err := inv.ResolveInjector(injectorRef)
 	if err != nil {
 		return nil, err
@@ -35,5 +35,5 @@ func (i *InjectorGenerator) Generate(inv inventory.Inventory, injectorRef common
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(injectorRef.Parent(), commons.ArtifactTypeInjector, nil, *logic, injector.Input(), out, dlq, nil)
+	return NewArtifact(injectorRef.Parent(), commons.ArtifactTypeInjector, *logic, injector.Input(), out, dlq, nil, WithKey(artifactId))
 }

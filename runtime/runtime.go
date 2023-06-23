@@ -2,9 +2,13 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 	"github.com/benthosdev/benthos/v4/public/service"
+	"github.com/benthosdev/benthos/v4/public/service/servicetest"
+	"github.com/rs/xid"
 	"github.com/shono-io/shono/artifacts"
 	"github.com/shono-io/shono/storage"
+	"os"
 )
 
 type RunConfig struct {
@@ -24,10 +28,9 @@ type StorageConfig struct {
 	Config map[string]any `json:"config" yaml:"config"`
 }
 
-func RunArtifact(cfg RunConfig, artifact artifacts.Artifact) error {
-	// -- register the store
-	if cfg.Storage.Name != "" {
-		storage.Register(cfg.Storage.Name, cfg.Storage.Config, false)
+func configForArtifact(cfg RunConfig, artifact artifacts.Artifact) ([]byte, error) {
+	if artifact == nil {
+		return nil, fmt.Errorf("no artifact provided")
 	}
 
 	// -- configure the artifact input
@@ -55,7 +58,17 @@ func RunArtifact(cfg RunConfig, artifact artifacts.Artifact) error {
 	}
 
 	// -- generate the benthos configuration
-	benthosConfig, err := GenerateBenthosConfig(artifact)
+	return GenerateBenthosConfig(artifact)
+}
+
+func RunArtifact(cfg RunConfig, artifact artifacts.Artifact) error {
+	// -- register the store
+	if cfg.Storage.Name != "" {
+		storage.Register(cfg.Storage.Name, cfg.Storage.Config, false)
+	}
+
+	// -- generate the benthos configuration
+	benthosConfig, err := configForArtifact(cfg, artifact)
 	if err != nil {
 		return err
 	}
@@ -73,12 +86,21 @@ func RunArtifact(cfg RunConfig, artifact artifacts.Artifact) error {
 	return s.Run(context.Background())
 }
 
-//func Test(a *benthos.Artifact, loglevel string) error {
-//	tmpFile := fmt.Sprintf("%s/%s.yaml", os.TempDir(), xid.New().String())
-//	if err := os.WriteFile(tmpFile, a.Spec.Content, 0644); err != nil {
-//		return fmt.Errorf("failed to write the artifact to temporary file %q: %w", tmpFile, err)
-//	}
-//
-//	servicetest.RunCLIWithArgs(context.Background(), "benthos", "test", "--log", loglevel, tmpFile)
-//	return nil
-//}
+func TestArtifact(cfg RunConfig, artifact artifacts.Artifact, loglevel string) error {
+	// -- register the store
+	storage.Register("memory", map[string]any{}, true)
+
+	// -- generate the benthos configuration
+	benthosConfig, err := configForArtifact(cfg, artifact)
+	if err != nil {
+		return err
+	}
+
+	tmpFile := fmt.Sprintf("%s/%s.yaml", os.TempDir(), xid.New().String())
+	if err := os.WriteFile(tmpFile, benthosConfig, 0644); err != nil {
+		return fmt.Errorf("failed to write the artifact to temporary file %q: %w", tmpFile, err)
+	}
+
+	servicetest.RunCLIWithArgs(context.Background(), "benthos", "test", "--log", loglevel, tmpFile)
+	return nil
+}
