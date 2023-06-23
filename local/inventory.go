@@ -66,3 +66,23 @@ func (e *Inventory) ListReactorsForConcept(conceptRef commons.Reference) ([]inve
 	}
 	return res, nil
 }
+
+func (e *Inventory) ListInjectorsForScope(scopeRef commons.Reference) ([]inventory.Injector, error) {
+	var res []inventory.Injector
+	for _, v := range e.injectors {
+		if v.Scope().String() == scopeRef.String() {
+			res = append(res, v)
+		}
+	}
+	return res, nil
+}
+
+func (e *Inventory) ListExtractorsForScope(scopeRef commons.Reference) ([]inventory.Extractor, error) {
+	var res []inventory.Extractor
+	for _, v := range e.extractors {
+		if v.Scope().String() == scopeRef.String() {
+			res = append(res, v)
+		}
+	}
+	return res, nil
+}

@@ -4,12 +4,13 @@ import (
 	"github.com/shono-io/shono/commons"
 )
 
-func NewExtractor(code string) *ExtractorBuilder {
+func NewExtractor(scopeCode, code string) *ExtractorBuilder {
 	return &ExtractorBuilder{
 		spec: ExtractorSpec{
 			NodeSpec: NodeSpec{
 				Code: code,
 			},
+			Scope: NewScopeReference(scopeCode),
 		},
 	}
 }

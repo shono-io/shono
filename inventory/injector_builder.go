@@ -8,12 +8,13 @@ func NewInjectorReference(scopeCode, injectorCode string) commons.Reference {
 	return NewScopeReference(scopeCode).Child("injectors", injectorCode)
 }
 
-func NewInjector(code string) *InjectorBuilder {
+func NewInjector(scopeCode, code string) *InjectorBuilder {
 	return &InjectorBuilder{
 		spec: InjectorSpec{
 			NodeSpec: NodeSpec{
 				Code: code,
 			},
+			Scope: NewScopeReference(scopeCode),
 		},
 	}
 }

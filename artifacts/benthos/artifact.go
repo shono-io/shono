@@ -55,9 +55,9 @@ type ArtifactSpec struct {
 	Output inventory.Output
 	Error  inventory.Output
 
-	Concept *inventory.Concept
+	Concept *inventory.Concept `yaml:"concept,omitempty"`
 
-	Storages []artifacts.Storage
+	Storages []artifacts.Storage `yaml:"storages,omitempty"`
 
 	InputEvents  []inventory.Event `yaml:"input_events,omitempty"`
 	Logic        artifacts.GeneratedLogic

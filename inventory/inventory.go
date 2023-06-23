@@ -11,7 +11,9 @@ type Inventory interface {
 	ResolveInjector(ref commons.Reference) (Injector, error)
 	ResolveExtractor(ref commons.Reference) (Extractor, error)
 
+	ListInjectorsForScope(scopeRef commons.Reference) ([]Injector, error)
 	ListReactorsForConcept(conceptRef commons.Reference) ([]Reactor, error)
+	ListExtractorsForScope(scopeRef commons.Reference) ([]Extractor, error)
 }
 
 type Node interface {
