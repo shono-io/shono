@@ -22,7 +22,7 @@ func WithConcept(concept *inventory.Concept) Opt {
 	}
 }
 
-func NewArtifact(owner commons.Reference, t commons.ArtifactType, logic artifacts.GeneratedLogic, input artifacts.GeneratedInput, output inventory.Output, error inventory.Output, storages []artifacts.Storage, opts ...Opt) (*Artifact, error) {
+func NewArtifact(owner commons.Reference, t commons.ArtifactType, logic artifacts.GeneratedLogic, input artifacts.GeneratedInput, output inventory.Output, error inventory.Output, opts ...Opt) (*Artifact, error) {
 	res := &Artifact{
 		Spec: ArtifactSpec{
 			Owner:     owner.String(),
@@ -33,7 +33,6 @@ func NewArtifact(owner commons.Reference, t commons.ArtifactType, logic artifact
 			Input:     input,
 			Output:    output,
 			Error:     error,
-			Storages:  storages,
 			Concept:   nil,
 		},
 	}
@@ -57,8 +56,6 @@ type ArtifactSpec struct {
 
 	Concept *inventory.Concept `yaml:"concept,omitempty"`
 
-	Storages []artifacts.Storage `yaml:"storages,omitempty"`
-
 	InputEvents  []inventory.Event `yaml:"input_events,omitempty"`
 	Logic        artifacts.GeneratedLogic
 	OutputEvents []inventory.Event `yaml:"output_events,omitempty"`
@@ -81,7 +78,7 @@ func (a *Artifact) Output() inventory.Output {
 }
 
 func (a *Artifact) Error() inventory.Output {
-	return a.Spec.Output
+	return a.Spec.Error
 }
 
 func (a *Artifact) Owner() commons.Reference {
@@ -103,10 +100,6 @@ func (a *Artifact) Type() commons.ArtifactType {
 
 func (a *Artifact) Reference() commons.Reference {
 	return a.Owner().Child("artifacts", a.Key())
-}
-
-func (a *Artifact) Storages() []artifacts.Storage {
-	return a.Spec.Storages
 }
 
 func (a *Artifact) Concept() *inventory.Concept {

@@ -5,11 +5,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func GenerateBenthosConfig(artifact artifacts.Artifact) ([]byte, error) {
+func GenerateBenthosConfig(artifact artifacts.Artifact, loglevel string) ([]byte, error) {
+	inp := map[string]any{
+		artifact.Input().Kind: artifact.Input().Config,
+	}
+
+	if artifact.Input().Logic != nil {
+		inp["processors"] = artifact.Input().Logic.Steps
+	}
+
 	result := map[string]any{
-		"input": map[string]any{
-			artifact.Input().Name: artifact.Input().Config,
-		},
+		"input": inp,
 		"pipeline": map[string]any{
 			"processors": artifact.Logic().Steps,
 		},
@@ -19,16 +25,19 @@ func GenerateBenthosConfig(artifact artifacts.Artifact) ([]byte, error) {
 					{
 						"check": "errored()",
 						"output": map[string]any{
-							artifact.Error().Name: artifact.Error().Config,
+							artifact.Error().Kind: artifact.Error().Config,
 						},
 					},
 					{
 						"output": map[string]any{
-							artifact.Output().Name: artifact.Output().Config,
+							artifact.Output().Kind: artifact.Output().Config,
 						},
 					},
 				},
 			},
+		},
+		"logger": map[string]any{
+			"level": loglevel,
 		},
 	}
 

@@ -16,6 +16,7 @@ type GeneratedLogic struct {
 }
 
 type Storage struct {
+	SystemId   string
 	Collection string
 }
 
@@ -37,8 +38,6 @@ type Artifact interface {
 	Input() GeneratedInput
 	Output() inventory.Output
 	Error() inventory.Output
-
-	Storages() []Storage
 }
 
 type ArtifactLoader interface {

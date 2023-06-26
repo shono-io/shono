@@ -10,9 +10,9 @@ func AsSuccessEvent(eventRef commons.Reference, status int, bloblangExpr string)
 	return TransformLogicStep{
 		BloblangMapping(strings.TrimSpace(fmt.Sprintf(`
 root = %s
-meta status = "%d"
-meta kind = %q
-meta backbone_topic = %q
+meta shono_status = "%d"
+meta shono_kind = %q
+meta shono_backbone_topic = %q
 `, bloblangExpr, status, eventRef.String(), eventRef.Parent().Parent().Code()))),
 	}
 }
@@ -20,10 +20,10 @@ meta backbone_topic = %q
 func AsFailedEvent(eventRef commons.Reference, errorCode int, reason string) TransformLogicStep {
 	return TransformLogicStep{
 		BloblangMapping(strings.TrimSpace(fmt.Sprintf(`
-root.reason = %q
-meta status = "%d"
-meta kind = %q
-meta backbone_topic = %q
+root.reason = %s
+meta shono_status = "%d"
+meta shono_kind = %q
+meta shono_backbone_topic = %q
 `, reason, errorCode, eventRef.String(), eventRef.Parent().Parent().Code()))),
 	}
 }

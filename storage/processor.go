@@ -13,9 +13,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Register(name string, cfg map[string]any, testMode bool) {
+func Register(kind string, cfg map[string]any, testMode bool) {
 	err := service.RegisterProcessor("store", storeProcConfig(), func(conf *service.ParsedConfig, mgr *service.Resources) (service.Processor, error) {
-		return procFromConfig(name, cfg, conf, testMode)
+		return procFromConfig(kind, cfg, conf, testMode)
 	})
 	if err != nil {
 		panic(err)
@@ -55,7 +55,7 @@ func procFromConfig(name string, cfg map[string]any, conf *service.ParsedConfig,
 	}
 
 	// -- we will use the code of the concept as the collection name
-	proc.collection = cr.Code()
+	proc.collection = fmt.Sprintf("%s__%s", cr.Parent().Code(), cr.Code())
 
 	if testMode {
 		proc.cl = memory.NewClient(map[string]any{
@@ -305,7 +305,7 @@ func (s *storeProc) getMessagePayload(message *service.Message) (map[string]any,
 
 func CopyMeta(src, dst *service.Message) {
 	_ = src.MetaWalk(func(k string, v string) error {
-		dst.MetaSet(k, v)
+		dst.MetaSetMut(k, v)
 		return nil
 	})
 }

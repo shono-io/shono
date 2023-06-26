@@ -3,11 +3,11 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/benthosdev/benthos/v4/public/service/servicetest"
 	"github.com/rs/xid"
 	"github.com/shono-io/shono/artifacts"
 	"github.com/shono-io/shono/storage"
+	"github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -15,83 +15,103 @@ type RunConfig struct {
 	// the id of the application. This should not change between runs
 	ApplicationId string `json:"application_id" yaml:"application_id"`
 
-	// the configuration provided for the input, output and dlq
-	Input  map[string]any `json:"input" yaml:"input"`
-	Output map[string]any `json:"output" yaml:"output"`
-	Dlq    map[string]any `json:"dlq" yaml:"dlq"`
-
-	Storage StorageConfig `json:"storage" yaml:"storage"`
+	StorageSystemId string `json:"storage" yaml:"storage"`
 }
 
-type StorageConfig struct {
-	Name   string         `json:"name" yaml:"name"`
-	Config map[string]any `json:"config" yaml:"config"`
-}
-
-func configForArtifact(cfg RunConfig, artifact artifacts.Artifact) ([]byte, error) {
+func configForArtifact(cfg RunConfig, systems SystemConfigs, artifact artifacts.Artifact, loglevel string) ([]byte, error) {
 	if artifact == nil {
 		return nil, fmt.Errorf("no artifact provided")
 	}
 
 	// -- configure the artifact input
 	inp := artifact.Input()
-	if cfg.Input != nil {
-		for k, v := range cfg.Input {
-			inp.Config[k] = v
-		}
+	inpSystem, err := systems.Resolve(inp.Id)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range inpSystem.Config {
+		inp.Config[k] = v
 	}
 
 	// -- configure the artifact output
 	out := artifact.Output()
-	if cfg.Output != nil {
-		for k, v := range cfg.Output {
-			out.Config[k] = v
-		}
+	outSystem, err := systems.Resolve(out.Id)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range outSystem.Config {
+		out.Config[k] = v
 	}
 
 	// -- configure the artifact dlq
 	dlq := artifact.Error()
-	if cfg.Dlq != nil {
-		for k, v := range cfg.Dlq {
-			dlq.Config[k] = v
+	dlqSystem, err := systems.Resolve(dlq.Id)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range dlqSystem.Config {
+		dlq.Config[k] = v
+	}
+
+	// -- generate the benthos configuration
+	return GenerateBenthosConfig(artifact, loglevel)
+}
+
+func RunArtifact(cfg RunConfig, systems SystemConfigs, artifact artifacts.Artifact, loglevel string) error {
+	ll, err := logrus.ParseLevel(loglevel)
+	if err != nil {
+		return fmt.Errorf("invalid log level %q: %w", loglevel, err)
+	}
+	logrus.SetLevel(ll)
+
+	if artifact.Concept() != nil {
+		// -- a concept might have a store associated with it
+		if artifact.Concept().Stored {
+			// -- find the storage system
+			storageSystem, ok := systems[cfg.StorageSystemId]
+			if !ok {
+				return fmt.Errorf("storage system %q not found", cfg.StorageSystemId)
+			}
+
+			storage.Register(storageSystem.Kind, storageSystem.Config, false)
 		}
 	}
 
 	// -- generate the benthos configuration
-	return GenerateBenthosConfig(artifact)
-}
-
-func RunArtifact(cfg RunConfig, artifact artifacts.Artifact) error {
-	// -- register the store
-	if cfg.Storage.Name != "" {
-		storage.Register(cfg.Storage.Name, cfg.Storage.Config, false)
-	}
-
-	// -- generate the benthos configuration
-	benthosConfig, err := configForArtifact(cfg, artifact)
+	benthosConfig, err := configForArtifact(cfg, systems, artifact, loglevel)
 	if err != nil {
 		return err
 	}
-
-	sb := service.NewStreamBuilder()
-	if err := sb.SetYAML(string(benthosConfig)); err != nil {
-		return err
+	tmpFile := fmt.Sprintf("%s/%s.yaml", os.TempDir(), xid.New().String())
+	if err := os.WriteFile(tmpFile, benthosConfig, 0644); err != nil {
+		return fmt.Errorf("failed to write the artifact to temporary file %q: %w", tmpFile, err)
 	}
 
-	s, err := sb.Build()
-	if err != nil {
-		return err
-	}
+	logrus.Infof("Running artifact %q from %q", artifact.Key(), tmpFile)
+	servicetest.RunCLIWithArgs(context.Background(), "benthos", "-c", tmpFile, "--log.level", loglevel)
 
-	return s.Run(context.Background())
+	//sb := service.NewStreamBuilder()
+	//if err := sb.SetYAML(string(benthosConfig)); err != nil {
+	//	return err
+	//}
+	//
+	//sb.SetPrintLogger(logrus.StandardLogger())
+	//
+	//s, err := sb.Build()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//return s.Run(context.Background())
+	return nil
 }
 
-func TestArtifact(cfg RunConfig, artifact artifacts.Artifact, loglevel string) error {
+func TestArtifact(artifact artifacts.Artifact, loglevel string) error {
 	// -- register the store
 	storage.Register("memory", map[string]any{}, true)
 
 	// -- generate the benthos configuration
-	benthosConfig, err := configForArtifact(cfg, artifact)
+	benthosConfig, err := GenerateBenthosConfig(artifact, loglevel)
 	if err != nil {
 		return err
 	}

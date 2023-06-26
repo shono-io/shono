@@ -9,14 +9,14 @@ type TestInputOpt func(input *TestInput)
 
 func WithTimestamp(timestamp int64) TestInputOpt {
 	return func(input *TestInput) {
-		input.Metadata["timestamp"] = fmt.Sprintf("%d", timestamp)
+		input.Metadata["shono_timestamp"] = fmt.Sprintf("%d", timestamp)
 	}
 }
 
 func WithEventRef(ref commons.Reference) TestInputOpt {
 	return func(input *TestInput) {
-		input.Metadata["backbone_topic"] = ref.Parent().Parent().Code()
-		input.Metadata["kind"] = ref.String()
+		input.Metadata["shono_backbone_topic"] = ref.Parent().Parent().Code()
+		input.Metadata["shono_kind"] = ref.String()
 	}
 }
 

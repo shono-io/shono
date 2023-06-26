@@ -14,13 +14,13 @@ func NewExtractorGenerator() *ExtractorGenerator {
 type ExtractorGenerator struct {
 }
 
-func (e *ExtractorGenerator) Generate(artifactId string, inv inventory.Inventory, extractorRef commons.Reference) (artifacts.Artifact, error) {
+func (e *ExtractorGenerator) Generate(applicationId string, artifactId string, inv inventory.Inventory, extractorRef commons.Reference) (artifacts.Artifact, error) {
 	extractor, err := inv.ResolveExtractor(extractorRef)
 	if err != nil {
 		return nil, err
 	}
 
-	inp, err := generateBackboneInput(extractor.InputEvents)
+	inp, err := generateBackboneInput(applicationId, extractor.InputEvents)
 	if err != nil {
 		return nil, fmt.Errorf("input: %w", err)
 	}
@@ -35,5 +35,5 @@ func (e *ExtractorGenerator) Generate(artifactId string, inv inventory.Inventory
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(extractorRef.Parent(), commons.ArtifactTypeExtractor, *logic, *inp, extractor.Output, dlq, nil, WithKey(artifactId))
+	return NewArtifact(extractorRef.Parent(), commons.ArtifactTypeExtractor, *logic, *inp, extractor.Output, dlq, WithKey(artifactId))
 }

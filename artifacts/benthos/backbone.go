@@ -7,7 +7,7 @@ import (
 	"github.com/shono-io/shono/system/kafka"
 )
 
-func generateBackboneInput(eventRefs []commons.Reference) (*artifacts.GeneratedInput, error) {
+func generateBackboneInput(consumerGroup string, eventRefs []commons.Reference) (*artifacts.GeneratedInput, error) {
 	// -- determine the topics to subscribe to
 	var topics []string
 	fnd := make(map[string]bool)
@@ -19,8 +19,9 @@ func generateBackboneInput(eventRefs []commons.Reference) (*artifacts.GeneratedI
 		}
 	}
 
-	inp := kafka.NewInput(
+	inp := kafka.NewInput("backbone",
 		kafka.WithInputTopics(topics...),
+		kafka.WithConsumerGroup(consumerGroup),
 	)
 
 	var inpLogic *artifacts.GeneratedLogic
@@ -33,7 +34,8 @@ func generateBackboneInput(eventRefs []commons.Reference) (*artifacts.GeneratedI
 	}
 
 	return &artifacts.GeneratedInput{
-		Name:       inp.Name,
+		Id:         inp.Id,
+		Kind:       inp.Kind,
 		ConfigSpec: inp.ConfigSpec,
 		Config:     inp.Config,
 		Logic:      inpLogic,
@@ -42,6 +44,7 @@ func generateBackboneInput(eventRefs []commons.Reference) (*artifacts.GeneratedI
 
 func generateBackboneDLQ() (inventory.Output, error) {
 	out := kafka.NewOutput(
+		"backbone",
 		kafka.WithOutputTopic("shono.dlq"),
 	)
 	return out, nil
@@ -49,7 +52,8 @@ func generateBackboneDLQ() (inventory.Output, error) {
 
 func generateBackboneOutput() (inventory.Output, error) {
 	out := kafka.NewOutput(
-		kafka.WithOutputTopic("${!@backbone_topic}"),
+		"backbone",
+		kafka.WithOutputTopic("${! @shono_backbone_topic }"),
 	)
 	return out, nil
 }

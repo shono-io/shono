@@ -1,14 +1,16 @@
 package inventory
 
 type Input struct {
-	Name       string              `json:"name" yaml:"name"`
+	Id         string              `json:"id" yaml:"id"`
+	Kind       string              `json:"kind" yaml:"kind"`
 	ConfigSpec []IOConfigSpecField `json:"-" yaml:"-"`
 	Config     map[string]any      `json:"config" yaml:"config"`
 	Logic      Logic               `json:"logic,omitempty" yaml:"logic,omitempty"`
 }
 
 type Output struct {
-	Name       string              `json:"name" yaml:"name"`
+	Id         string              `json:"id" yaml:"id"`
+	Kind       string              `json:"kind" yaml:"kind"`
 	ConfigSpec []IOConfigSpecField `json:"-" yaml:"-"`
 	Config     map[string]any      `json:"config" yaml:"config"`
 }

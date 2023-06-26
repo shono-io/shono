@@ -31,8 +31,13 @@ func NewClient(cfg map[string]any) (inventory.StorageClient, error) {
 		return nil, fmt.Errorf("missing database field")
 	}
 
+	var u []string
+	for _, v := range urls.([]any) {
+		u = append(u, v.(string))
+	}
+
 	conn, err := http.NewConnection(http.ConnectionConfig{
-		Endpoints: urls.([]string),
+		Endpoints: u,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create arangodb connection: %w", err)

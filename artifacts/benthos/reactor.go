@@ -15,7 +15,7 @@ func NewConceptGenerator() *ConceptGenerator {
 type ConceptGenerator struct {
 }
 
-func (g *ConceptGenerator) Generate(artifactId string, inv inventory.Inventory, conceptRef commons.Reference) (artifacts.Artifact, error) {
+func (g *ConceptGenerator) Generate(applicationId string, artifactId string, inv inventory.Inventory, conceptRef commons.Reference) (artifacts.Artifact, error) {
 	concept, err := inv.ResolveConcept(conceptRef)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (g *ConceptGenerator) Generate(artifactId string, inv inventory.Inventory, 
 		inputEvents = append(inputEvents, r.InputEvent)
 	}
 
-	inp, err := generateBackboneInput(inputEvents)
+	inp, err := generateBackboneInput(applicationId, inputEvents)
 	if err != nil {
 		return nil, fmt.Errorf("input: %w", err)
 	}
@@ -51,17 +51,12 @@ func (g *ConceptGenerator) Generate(artifactId string, inv inventory.Inventory, 
 		return nil, fmt.Errorf("dlq: %w", err)
 	}
 
-	var storages []artifacts.Storage
-	if concept.Stored {
-		storages = append(storages, artifacts.Storage{Collection: fmt.Sprintf("%s__%s", conceptRef.Parent().Code(), conceptRef.Code())})
-	}
-
 	l, err := generateLogic(logic)
 	if err != nil {
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(conceptRef, commons.ArtifactTypeConcept, *l, *inp, out, dlq, storages, WithConcept(concept), WithKey(artifactId))
+	return NewArtifact(conceptRef, commons.ArtifactTypeConcept, *l, *inp, out, dlq, WithConcept(concept), WithKey(artifactId))
 }
 
 func generateWrapperLogic(reactors []inventory.Reactor) (inventory.Logic, error) {
@@ -69,7 +64,7 @@ func generateWrapperLogic(reactors []inventory.Reactor) (inventory.Logic, error)
 	var cases []dsl.ConditionalCase
 	for _, r := range reactors {
 		cases = append(cases, dsl.SwitchCase(
-			fmt.Sprintf("@kind == %q", r.InputEvent.String()),
+			fmt.Sprintf("@shono_kind == %q", r.InputEvent.String()),
 			r.Logic.Steps()...))
 
 		// -- add the tests
@@ -77,10 +72,14 @@ func generateWrapperLogic(reactors []inventory.Reactor) (inventory.Logic, error)
 	}
 
 	// -- add a default case that logs unmatched event to trace
-	cases = append(cases, dsl.SwitchDefault(dsl.Log("TRACE", "no processor for ${!meta(\"kind\")} with payload ${!this.format_json()}")))
+	cases = append(cases, dsl.SwitchDefault(
+		dsl.Log("TRACE", "no processor for ${!meta(\"kind\")} with payload ${!this.format_json()}"),
+		dsl.Transform(dsl.BloblangMapping(`root = deleted()`)),
+	))
 
 	return result.
 		Steps(
+			dsl.Log("TRACE", "received ${!@} with payload ${!this.format_json()}"),
 			dsl.Switch(cases...),
 		).
 		Build(), nil

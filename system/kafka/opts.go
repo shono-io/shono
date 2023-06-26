@@ -13,6 +13,12 @@ func WithSeedBroker(seedBroker string) Opt {
 	}
 }
 
+func WithConsumerGroup(consumerGroup string) Opt {
+	return func(config map[string]any) {
+		config["consumer_group"] = consumerGroup
+	}
+}
+
 func WithInputTopics(topics ...string) Opt {
 	return func(config map[string]any) {
 		config["topics"] = topics
