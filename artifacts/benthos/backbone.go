@@ -1,12 +1,13 @@
 package benthos
 
 import (
+	"github.com/shono-io/shono/artifacts"
 	"github.com/shono-io/shono/commons"
 	"github.com/shono-io/shono/inventory"
 	"github.com/shono-io/shono/system/kafka"
 )
 
-func generateBackboneInput(eventRefs []commons.Reference) (inventory.Input, error) {
+func generateBackboneInput(eventRefs []commons.Reference) (*artifacts.GeneratedInput, error) {
 	// -- determine the topics to subscribe to
 	var topics []string
 	fnd := make(map[string]bool)
@@ -22,7 +23,21 @@ func generateBackboneInput(eventRefs []commons.Reference) (inventory.Input, erro
 		kafka.WithInputTopics(topics...),
 	)
 
-	return inp, nil
+	var inpLogic *artifacts.GeneratedLogic
+	if inp.Logic != nil {
+		l, err := generateLogic(inp.Logic)
+		if err != nil {
+			return nil, err
+		}
+		inpLogic = l
+	}
+
+	return &artifacts.GeneratedInput{
+		Name:       inp.Name,
+		ConfigSpec: inp.ConfigSpec,
+		Config:     inp.Config,
+		Logic:      inpLogic,
+	}, nil
 }
 
 func generateBackboneDLQ() (inventory.Output, error) {

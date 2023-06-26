@@ -20,6 +20,21 @@ func (i *InjectorGenerator) Generate(artifactId string, inv inventory.Inventory,
 		return nil, err
 	}
 
+	var inpLogic *artifacts.GeneratedLogic
+	if injector.Input.Logic != nil {
+		l, err := generateLogic(injector.Input.Logic)
+		if err != nil {
+			return nil, err
+		}
+		inpLogic = l
+	}
+	inp := artifacts.GeneratedInput{
+		Name:       injector.Input.Name,
+		ConfigSpec: injector.Input.ConfigSpec,
+		Config:     injector.Input.Config,
+		Logic:      inpLogic,
+	}
+
 	out, err := generateBackboneOutput()
 	if err != nil {
 		return nil, fmt.Errorf("output: %w", err)
@@ -30,10 +45,10 @@ func (i *InjectorGenerator) Generate(artifactId string, inv inventory.Inventory,
 		return nil, fmt.Errorf("dlq: %w", err)
 	}
 
-	logic, err := generateLogic(injector.Logic())
+	logic, err := generateLogic(injector.Logic)
 	if err != nil {
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(injectorRef.Parent(), commons.ArtifactTypeInjector, *logic, injector.Input(), out, dlq, nil, WithKey(artifactId))
+	return NewArtifact(injectorRef.Parent(), commons.ArtifactTypeInjector, *logic, inp, out, dlq, nil, WithKey(artifactId))
 }

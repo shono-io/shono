@@ -20,7 +20,7 @@ func (e *ExtractorGenerator) Generate(artifactId string, inv inventory.Inventory
 		return nil, err
 	}
 
-	inp, err := generateBackboneInput(extractor.InputEvents())
+	inp, err := generateBackboneInput(extractor.InputEvents)
 	if err != nil {
 		return nil, fmt.Errorf("input: %w", err)
 	}
@@ -30,10 +30,10 @@ func (e *ExtractorGenerator) Generate(artifactId string, inv inventory.Inventory
 		return nil, fmt.Errorf("dlq: %w", err)
 	}
 
-	logic, err := generateLogic(extractor.Logic())
+	logic, err := generateLogic(extractor.Logic)
 	if err != nil {
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(extractorRef.Parent(), commons.ArtifactTypeExtractor, *logic, inp, extractor.Output(), dlq, nil, WithKey(artifactId))
+	return NewArtifact(extractorRef.Parent(), commons.ArtifactTypeExtractor, *logic, *inp, extractor.Output, dlq, nil, WithKey(artifactId))
 }

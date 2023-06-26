@@ -1,32 +1,32 @@
 package inventory
 
-func NewTest(summary string) TestBuilder {
-	return TestBuilder{
-		spec: TestSpec{
+func NewTest(summary string) *TestBuilder {
+	return &TestBuilder{
+		test: &Test{
 			Summary: summary,
 		},
 	}
 }
 
 type TestBuilder struct {
-	spec TestSpec
+	test *Test
 }
 
-func (b TestBuilder) Given(environment map[string]any) TestBuilder {
-	b.spec.EnvironmentVars = environment
+func (b *TestBuilder) Given(environment map[string]any) *TestBuilder {
+	b.test.EnvironmentVars = environment
 	return b
 }
 
-func (b TestBuilder) When(input TestInput) TestBuilder {
-	b.spec.Input = input
+func (b *TestBuilder) When(input TestInput) *TestBuilder {
+	b.test.Input = input
 	return b
 }
 
-func (b TestBuilder) Then(assertions ...TestAssertion) TestBuilder {
-	b.spec.Assertions = append(b.spec.Assertions, assertions...)
+func (b *TestBuilder) Then(assertions ...TestAssertion) *TestBuilder {
+	b.test.Assertions = append(b.test.Assertions, assertions...)
 	return b
 }
 
-func (b TestBuilder) Build() Test {
-	return test{b.spec}
+func (b *TestBuilder) Build() Test {
+	return *b.test
 }

@@ -6,8 +6,8 @@ import (
 
 func NewExtractor(scopeCode, code string) *ExtractorBuilder {
 	return &ExtractorBuilder{
-		spec: ExtractorSpec{
-			NodeSpec: NodeSpec{
+		extractor: &Extractor{
+			Node: Node{
 				Code: code,
 			},
 			Scope: NewScopeReference(scopeCode),
@@ -16,44 +16,44 @@ func NewExtractor(scopeCode, code string) *ExtractorBuilder {
 }
 
 type ExtractorBuilder struct {
-	spec ExtractorSpec
+	extractor *Extractor
 }
 
 func (e *ExtractorBuilder) Summary(summary string) *ExtractorBuilder {
-	e.spec.Summary = summary
+	e.extractor.Summary = summary
 	return e
 }
 
 func (e *ExtractorBuilder) Docs(docs string) *ExtractorBuilder {
-	e.spec.Docs = docs
+	e.extractor.Docs = docs
 	return e
 }
 
 func (e *ExtractorBuilder) Status(status commons.Status) *ExtractorBuilder {
-	e.spec.Status = status
+	e.extractor.Status = status
 	return e
 }
 
 func (e *ExtractorBuilder) Scope(code string) *ExtractorBuilder {
-	e.spec.Scope = commons.NewReference("scopes", code)
+	e.extractor.Scope = commons.NewReference("scopes", code)
 	return e
 }
 
 func (e *ExtractorBuilder) Output(output Output) *ExtractorBuilder {
-	e.spec.Output = output
+	e.extractor.Output = output
 	return e
 }
 
 func (e *ExtractorBuilder) InputEvent(scopeCode, conceptCode, eventCode string) *ExtractorBuilder {
-	e.spec.InputEvents = append(e.spec.InputEvents, commons.NewReference("scopes", scopeCode).Child("concepts", conceptCode).Child("events", eventCode))
+	e.extractor.InputEvents = append(e.extractor.InputEvents, commons.NewReference("scopes", scopeCode).Child("concepts", conceptCode).Child("events", eventCode))
 	return e
 }
 
-func (e *ExtractorBuilder) Logic(b LogicBuilder) *ExtractorBuilder {
-	e.spec.Logic = b.Build()
+func (e *ExtractorBuilder) Logic(b *LogicBuilder) *ExtractorBuilder {
+	e.extractor.Logic = b.Build()
 	return e
 }
 
-func (e *ExtractorBuilder) Build() Extractor {
-	return &extractor{Spec: e.spec}
+func (e *ExtractorBuilder) Build() *Extractor {
+	return e.extractor
 }

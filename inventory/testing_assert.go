@@ -4,10 +4,8 @@ func AssertMetadataEquals(expected map[string]string) TestAssertion {
 	return NewMetadataTestAssertion(expected, true)
 }
 
-func AssertMetadataContains(key, value string) TestAssertion {
-	return NewMetadataTestAssertion(map[string]string{
-		key: value,
-	}, false)
+func AssertMetadataContains(expected map[string]string) TestAssertion {
+	return NewMetadataTestAssertion(expected, false)
 }
 
 func AssertContentEquals(expected map[string]interface{}) TestAssertion {

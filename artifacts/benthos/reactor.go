@@ -28,7 +28,7 @@ func (g *ConceptGenerator) Generate(artifactId string, inv inventory.Inventory, 
 
 	var inputEvents []commons.Reference
 	for _, r := range reactors {
-		inputEvents = append(inputEvents, r.InputEvent())
+		inputEvents = append(inputEvents, r.InputEvent)
 	}
 
 	inp, err := generateBackboneInput(inputEvents)
@@ -52,7 +52,7 @@ func (g *ConceptGenerator) Generate(artifactId string, inv inventory.Inventory, 
 	}
 
 	var storages []artifacts.Storage
-	if concept.Stored() {
+	if concept.Stored {
 		storages = append(storages, artifacts.Storage{Collection: fmt.Sprintf("%s__%s", conceptRef.Parent().Code(), conceptRef.Code())})
 	}
 
@@ -61,7 +61,7 @@ func (g *ConceptGenerator) Generate(artifactId string, inv inventory.Inventory, 
 		return nil, fmt.Errorf("logic: %w", err)
 	}
 
-	return NewArtifact(conceptRef, commons.ArtifactTypeConcept, *l, inp, out, dlq, storages, WithConcept(&concept), WithKey(artifactId))
+	return NewArtifact(conceptRef, commons.ArtifactTypeConcept, *l, *inp, out, dlq, storages, WithConcept(concept), WithKey(artifactId))
 }
 
 func generateWrapperLogic(reactors []inventory.Reactor) (inventory.Logic, error) {
@@ -69,15 +69,15 @@ func generateWrapperLogic(reactors []inventory.Reactor) (inventory.Logic, error)
 	var cases []dsl.ConditionalCase
 	for _, r := range reactors {
 		cases = append(cases, dsl.SwitchCase(
-			fmt.Sprintf("@io_shono_kind == %q", r.InputEvent().String()),
-			r.Logic().Steps()...))
+			fmt.Sprintf("@kind == %q", r.InputEvent.String()),
+			r.Logic.Steps()...))
 
 		// -- add the tests
-		result.Test(r.Logic().Tests()...)
+		result.Test(r.Logic.Tests()...)
 	}
 
 	// -- add a default case that logs unmatched event to trace
-	cases = append(cases, dsl.SwitchDefault(dsl.Log("TRACE", "no processor for ${!this.format_json()}")))
+	cases = append(cases, dsl.SwitchDefault(dsl.Log("TRACE", "no processor for ${!meta(\"kind\")} with payload ${!this.format_json()}")))
 
 	return result.
 		Steps(

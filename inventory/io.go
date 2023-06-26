@@ -4,6 +4,7 @@ type Input struct {
 	Name       string              `json:"name" yaml:"name"`
 	ConfigSpec []IOConfigSpecField `json:"-" yaml:"-"`
 	Config     map[string]any      `json:"config" yaml:"config"`
+	Logic      Logic               `json:"logic,omitempty" yaml:"logic,omitempty"`
 }
 
 type Output struct {

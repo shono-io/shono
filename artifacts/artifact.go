@@ -34,7 +34,7 @@ type Artifact interface {
 	InputEvents() []inventory.Event
 	OutputEvents() []inventory.Event
 
-	Input() inventory.Input
+	Input() GeneratedInput
 	Output() inventory.Output
 	Error() inventory.Output
 

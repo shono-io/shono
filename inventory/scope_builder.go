@@ -4,14 +4,10 @@ import (
 	"github.com/shono-io/shono/commons"
 )
 
-func NewScopeReference(code string) commons.Reference {
-	return commons.NewReference("scopes", code)
-}
-
 func NewScope(code string) *ScopeBuilder {
 	return &ScopeBuilder{
-		spec: ScopeSpec{
-			NodeSpec: NodeSpec{
+		scope: &Scope{
+			Node: Node{
 				Code: code,
 			},
 		},
@@ -19,24 +15,24 @@ func NewScope(code string) *ScopeBuilder {
 }
 
 type ScopeBuilder struct {
-	spec ScopeSpec
+	scope *Scope
 }
 
 func (s *ScopeBuilder) Summary(summary string) *ScopeBuilder {
-	s.spec.Summary = summary
+	s.scope.Summary = summary
 	return s
 }
 
 func (s *ScopeBuilder) Docs(docs string) *ScopeBuilder {
-	s.spec.Docs = docs
+	s.scope.Docs = docs
 	return s
 }
 
 func (s *ScopeBuilder) Status(status commons.Status) *ScopeBuilder {
-	s.spec.Status = status
+	s.scope.Status = status
 	return s
 }
 
-func (s *ScopeBuilder) Build() Scope {
-	return &scope{Spec: s.spec}
+func (s *ScopeBuilder) Build() *Scope {
+	return s.scope
 }

@@ -1,23 +1,23 @@
 package inventory
 
-func NewLogic() LogicBuilder {
-	return LogicBuilder{}
+func NewLogic() *LogicBuilder {
+	return &LogicBuilder{}
 }
 
 type LogicBuilder struct {
 	spec LogicSpec
 }
 
-func (b LogicBuilder) Steps(steps ...LogicStep) LogicBuilder {
+func (b *LogicBuilder) Steps(steps ...LogicStep) *LogicBuilder {
 	b.spec.Steps = steps
 	return b
 }
 
-func (b LogicBuilder) Test(tests ...Test) LogicBuilder {
+func (b *LogicBuilder) Test(tests ...Test) *LogicBuilder {
 	b.spec.Tests = append(b.spec.Tests, tests...)
 	return b
 }
 
-func (b LogicBuilder) Build() Logic {
+func (b *LogicBuilder) Build() Logic {
 	return logic{b.spec}
 }

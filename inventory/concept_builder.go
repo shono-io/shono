@@ -2,14 +2,10 @@ package inventory
 
 import "github.com/shono-io/shono/commons"
 
-func NewConceptReference(scopeCode, code string) commons.Reference {
-	return NewScopeReference(scopeCode).Child("concepts", code)
-}
-
 func NewConcept(scopeCode, code string) *ConceptBuilder {
 	return &ConceptBuilder{
-		spec: ConceptSpec{
-			NodeSpec: NodeSpec{
+		concept: &Concept{
+			Node: Node{
 				Code: code,
 			},
 			Scope: NewScopeReference(scopeCode),
@@ -18,29 +14,29 @@ func NewConcept(scopeCode, code string) *ConceptBuilder {
 }
 
 type ConceptBuilder struct {
-	spec ConceptSpec
+	concept *Concept
 }
 
 func (b *ConceptBuilder) Summary(summary string) *ConceptBuilder {
-	b.spec.Summary = summary
+	b.concept.Summary = summary
 	return b
 }
 
 func (b *ConceptBuilder) Docs(docs string) *ConceptBuilder {
-	b.spec.Docs = docs
+	b.concept.Docs = docs
 	return b
 }
 
 func (b *ConceptBuilder) Status(status commons.Status) *ConceptBuilder {
-	b.spec.Status = status
+	b.concept.Status = status
 	return b
 }
 
 func (b *ConceptBuilder) Stored() *ConceptBuilder {
-	b.spec.Stored = true
+	b.concept.Stored = true
 	return b
 }
 
-func (b *ConceptBuilder) Build() Concept {
-	return &concept{Spec: b.spec}
+func (b *ConceptBuilder) Build() *Concept {
+	return b.concept
 }

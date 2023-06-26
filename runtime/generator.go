@@ -6,7 +6,6 @@ import (
 )
 
 func GenerateBenthosConfig(artifact artifacts.Artifact) ([]byte, error) {
-
 	result := map[string]any{
 		"input": map[string]any{
 			artifact.Input().Name: artifact.Input().Config,

@@ -8,6 +8,7 @@ import (
 
 func NewInput(opts ...Opt) inventory.Input {
 	config := map[string]any{}
+
 	for _, opt := range opts {
 		opt(config)
 	}
@@ -16,6 +17,7 @@ func NewInput(opts ...Opt) inventory.Input {
 		Name:       "kafka_franz",
 		ConfigSpec: utils.GetBenthosInputConfig("kafka_franz"),
 		Config:     config,
+		Logic:      nil,
 	}
 }
 

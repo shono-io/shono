@@ -22,10 +22,10 @@ func WithConcept(concept *inventory.Concept) Opt {
 	}
 }
 
-func NewArtifact(owner commons.Reference, t commons.ArtifactType, logic artifacts.GeneratedLogic, input inventory.Input, output inventory.Output, error inventory.Output, storages []artifacts.Storage, opts ...Opt) (*Artifact, error) {
+func NewArtifact(owner commons.Reference, t commons.ArtifactType, logic artifacts.GeneratedLogic, input artifacts.GeneratedInput, output inventory.Output, error inventory.Output, storages []artifacts.Storage, opts ...Opt) (*Artifact, error) {
 	res := &Artifact{
 		Spec: ArtifactSpec{
-			Owner:     owner,
+			Owner:     owner.String(),
 			Key:       xid.New().String(),
 			Timestamp: time.Now(),
 			Type:      t,
@@ -46,12 +46,12 @@ func NewArtifact(owner commons.Reference, t commons.ArtifactType, logic artifact
 }
 
 type ArtifactSpec struct {
-	Owner     commons.Reference
+	Owner     string
 	Key       string
 	Timestamp time.Time
 	Type      commons.ArtifactType
 
-	Input  inventory.Input
+	Input  artifacts.GeneratedInput
 	Output inventory.Output
 	Error  inventory.Output
 
@@ -72,7 +72,7 @@ func (a *Artifact) Logic() artifacts.GeneratedLogic {
 	return a.Spec.Logic
 }
 
-func (a *Artifact) Input() inventory.Input {
+func (a *Artifact) Input() artifacts.GeneratedInput {
 	return a.Spec.Input
 }
 
@@ -85,7 +85,8 @@ func (a *Artifact) Error() inventory.Output {
 }
 
 func (a *Artifact) Owner() commons.Reference {
-	return a.Spec.Owner
+	r, _ := commons.ParseString(a.Spec.Owner)
+	return r
 }
 
 func (a *Artifact) Key() string {

@@ -5,117 +5,69 @@ import (
 	"strings"
 )
 
+var ReferenceSeparator = "/"
+
 func ParseString(fullKey string) (Reference, error) {
-	if (fullKey == "") || (fullKey == "/") {
-		return nil, fmt.Errorf("empty reference")
+	if (fullKey == "") || (fullKey == ReferenceSeparator) {
+		return "", fmt.Errorf("empty Reference")
 	}
 
-	return Parse(strings.Split(strings.TrimPrefix(fullKey, "/"), "/")...)
+	return Parse(strings.Split(strings.TrimPrefix(fullKey, ReferenceSeparator), ReferenceSeparator)...)
 }
 
 func Parse(parts ...string) (Reference, error) {
 	if len(parts)%2 != 0 {
-		return nil, fmt.Errorf("an uneven number of parts cannot result in a valid reference: %v", parts)
+		return "", fmt.Errorf("an uneven number of parts cannot result in a valid Reference: %v", parts)
 	}
 
-	var sections []ReferenceSection
-	for i := 0; i < len(parts); i += 2 {
-		sections = append(sections, ReferenceSection{Kind: parts[i], Code: parts[i+1]})
-	}
-
-	return &reference{sections}, nil
+	return Reference(strings.Join(parts, ReferenceSeparator)), nil
 }
 
-type ReferenceSection struct {
-	Kind string
-	Code string
-}
-
-type Reference interface {
-	Parent() Reference
-	Child(kind, code string) Reference
-	Code() string
-	Kind() string
-	String() string
-}
-
-type reference struct {
-	sections []ReferenceSection
-}
+type Reference string
 
 func NewReference(kind, code string) Reference {
-	return &reference{[]ReferenceSection{{Kind: kind, Code: code}}}
+	return Reference(fmt.Sprintf("%s%s%s", kind, ReferenceSeparator, code))
 }
 
-func (k *reference) Parent() Reference {
-	if len(k.sections) == 0 {
-		return nil
-	}
-
-	return &reference{(k.sections)[:len(k.sections)-1]}
+func (k Reference) parts() []string {
+	return strings.Split(string(k), ReferenceSeparator)
 }
 
-func (k *reference) Child(kind, code string) Reference {
-	return &reference{append(k.sections, ReferenceSection{Kind: kind, Code: code})}
+func (k Reference) IsValid() bool {
+	return len(k) > 0 && len(k.parts())%2 == 0
 }
 
-func (k *reference) Code() string {
-	if len(k.sections) == 0 {
+func (k Reference) Parent() Reference {
+	p := k.parts()
+	if len(p) <= 2 {
 		return ""
 	}
 
-	return k.sections[len(k.sections)-1].Code
+	return Reference(strings.Join(p[:len(p)-2], ReferenceSeparator))
 }
 
-func (k *reference) Kind() string {
-	if len(k.sections) == 0 {
+func (k Reference) Child(kind, code string) Reference {
+	return Reference(fmt.Sprintf("%s%s%s%s%s", k, ReferenceSeparator, kind, ReferenceSeparator, code))
+}
+
+func (k Reference) Code() string {
+	p := k.parts()
+	if len(p) == 0 {
 		return ""
 	}
 
-	return k.sections[len(k.sections)-1].Kind
+	return p[len(p)-1]
 }
 
-func (k *reference) String() string {
-	if len(k.sections) == 0 {
+func (k Reference) Kind() string {
+	p := k.parts()
+	if len(p) < 2 {
 		return ""
 	}
 
-	var s string
-	for _, section := range k.sections {
-		s += section.Kind + "/" + section.Code + "/"
-	}
-	return s[:len(s)-1]
+	return p[len(p)-2]
 }
 
-func (k *reference) MarshalJSON() ([]byte, error) {
-	return []byte(k.String()), nil
-}
-
-func (k *reference) UnmarshalJSON(data []byte) error {
-	parsed, err := ParseString(string(data))
-	if err != nil {
-		return err
-	}
-
-	k.sections = parsed.(*reference).sections
-	return nil
-}
-
-func (k *reference) UnmarshalYAML(f func(interface{}) error) error {
-	var s string
-	if err := f(&s); err != nil {
-		return err
-	}
-
-	parsed, err := ParseString(s)
-	if err != nil {
-		return err
-	}
-
-	k.sections = parsed.(*reference).sections
-	return nil
-}
-
-func (k *reference) MarshalYAML() (interface{}, error) {
-	return k.String(), nil
+func (k Reference) String() string {
+	return string(k)
 }

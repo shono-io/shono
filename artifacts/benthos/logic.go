@@ -43,9 +43,8 @@ func generateLogic(logic inventory.Logic) (*artifacts.GeneratedLogic, error) {
 }
 
 func generateTest(test inventory.Test) (map[string]any, error) {
-	var outputBatch []map[string]any
-	for _, ass := range test.Assertions() {
-		batch := map[string]any{}
+	batch := map[string]any{}
+	for _, ass := range test.Assertions {
 		if ass.Payload() != nil {
 			if ass.Strict() {
 				batch["json_equals"] = ass.Payload()
@@ -58,16 +57,18 @@ func generateTest(test inventory.Test) (map[string]any, error) {
 	}
 
 	return map[string]any{
-		"name":        test.Summary(),
-		"environment": test.EnvironmentVars(),
+		"name":        test.Summary,
+		"environment": test.EnvironmentVars,
 		"input_batch": []map[string]any{
 			{
-				"content":  test.Input().Content,
-				"metadata": test.Input().Metadata,
+				"json_content": test.Input.Content,
+				"metadata":     test.Input.Metadata,
 			},
 		},
 		"output_batches": [][]map[string]any{
-			outputBatch,
+			{
+				batch,
+			},
 		},
 	}, nil
 }
@@ -176,15 +177,6 @@ func generateStoreLogicStep(step dsl.StoreLogicStep) (map[string]any, error) {
 
 	if step.Key != "" {
 		result["key"] = step.Key
-	}
-
-	if step.Value != nil {
-		switch step.Value.Language {
-		case "bloblang":
-			result["value"] = strings.TrimSpace(step.Value.Sourcecode)
-		default:
-			return nil, fmt.Errorf("unknown mapping language: %s", step.Value.Language)
-		}
 	}
 
 	if len(step.Filters) > 0 {

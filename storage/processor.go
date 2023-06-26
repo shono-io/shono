@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/benthosdev/benthos/v4/public/bloblang"
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/shono-io/shono/commons"
 	"github.com/shono-io/shono/inventory"
@@ -35,9 +34,6 @@ func storeProcConfig() *service.ConfigSpec {
 			Description("The operation to perform, one of: 'list', 'get', 'add', 'set' or 'delete'")).
 		Field(service.NewInterpolatedStringField("key").
 			Description("The key to use. This is only applicable for 'get', 'add', 'set' and 'delete'").
-			Optional()).
-		Field(service.NewBloblangField("value").
-			Description("The value to use. This is only applicable for 'add' and 'set'").
 			Optional()).
 		Field(service.NewInterpolatedStringMapField("filters").
 			Description("A map of filters to apply to the operation. This is only applicable for 'list'").
@@ -103,13 +99,6 @@ func procFromConfig(name string, cfg map[string]any, conf *service.ParsedConfig,
 		}
 	}
 
-	if conf.Contains("value") {
-		proc.value, err = conf.FieldBloblang("value")
-		if err != nil {
-			return nil, fmt.Errorf("failed to get value: %w", err)
-		}
-	}
-
 	return proc, nil
 }
 
@@ -119,7 +108,6 @@ type storeProc struct {
 
 	operation string
 	key       *service.InterpolatedString
-	value     *bloblang.Executor
 	filters   map[string]*service.InterpolatedString
 }
 
@@ -288,7 +276,8 @@ func (s *storeProc) processList(ctx context.Context, message *service.Message) (
 }
 
 func (s *storeProc) getMessagePayload(message *service.Message) (map[string]any, error) {
-	sd, err := s.value.Query(message)
+	//sd, err := s.value.Query(message)
+	sd, err := message.AsStructuredMut()
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve the value: %w", err)
 	}
