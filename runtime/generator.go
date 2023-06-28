@@ -5,19 +5,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func GenerateBenthosConfig(artifact artifacts.Artifact, loglevel string) ([]byte, error) {
+func GenerateBenthosConfig(artifact *artifacts.Artifact, loglevel string) ([]byte, error) {
 	inp := map[string]any{
-		artifact.Input().Kind: artifact.Input().Config,
+		artifact.Input.Kind: artifact.Input.Config,
 	}
 
-	if artifact.Input().Logic != nil {
-		inp["processors"] = artifact.Input().Logic.Steps
+	if artifact.Input.Logic != nil {
+		inp["processors"] = artifact.Input.Logic.Steps
 	}
 
 	result := map[string]any{
 		"input": inp,
 		"pipeline": map[string]any{
-			"processors": artifact.Logic().Steps,
+			"processors": artifact.Logic.Steps,
 		},
 		"output": map[string]any{
 			"switch": map[string]any{
@@ -25,12 +25,12 @@ func GenerateBenthosConfig(artifact artifacts.Artifact, loglevel string) ([]byte
 					{
 						"check": "errored()",
 						"output": map[string]any{
-							artifact.Error().Kind: artifact.Error().Config,
+							artifact.DLQ.Kind: artifact.DLQ.Config,
 						},
 					},
 					{
 						"output": map[string]any{
-							artifact.Output().Kind: artifact.Output().Config,
+							artifact.Output.Kind: artifact.Output.Config,
 						},
 					},
 				},
@@ -41,8 +41,8 @@ func GenerateBenthosConfig(artifact artifacts.Artifact, loglevel string) ([]byte
 		},
 	}
 
-	if artifact.Logic().Tests != nil {
-		result["tests"] = artifact.Logic().Tests
+	if artifact.Logic.Tests != nil {
+		result["tests"] = artifact.Logic.Tests
 	}
 
 	return yaml.Marshal(result)

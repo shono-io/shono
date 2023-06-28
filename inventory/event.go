@@ -14,5 +14,5 @@ type Event struct {
 }
 
 func (e *Event) Reference() commons.Reference {
-	return NewEventReference(e.Concept.Parent().Parent().Code(), e.Concept.Parent().Code(), e.Code)
+	return NewEventReference(e.Concept.Parent().Code(), e.Concept.Code(), e.Code)
 }

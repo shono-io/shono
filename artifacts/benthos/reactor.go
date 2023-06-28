@@ -15,10 +15,13 @@ func NewConceptGenerator() *ConceptGenerator {
 type ConceptGenerator struct {
 }
 
-func (g *ConceptGenerator) Generate(applicationId string, artifactId string, inv inventory.Inventory, conceptRef commons.Reference) (artifacts.Artifact, error) {
+func (g *ConceptGenerator) Generate(applicationId string, artifactId string, inv inventory.Inventory, conceptRef commons.Reference) (*artifacts.Artifact, error) {
 	concept, err := inv.ResolveConcept(conceptRef)
 	if err != nil {
 		return nil, err
+	}
+	opts := []artifacts.Opt{
+		artifacts.WithConcept(concept),
 	}
 
 	reactors, err := inv.ListReactorsForConcept(conceptRef)
@@ -26,37 +29,68 @@ func (g *ConceptGenerator) Generate(applicationId string, artifactId string, inv
 		return nil, err
 	}
 
-	var inputEvents []commons.Reference
+	var inputEventRefs []commons.Reference
+	var inputEvents []artifacts.GeneratedEvent
+	var outputEvents []artifacts.GeneratedEvent
 	for _, r := range reactors {
-		inputEvents = append(inputEvents, r.InputEvent)
-	}
+		inputEventRefs = append(inputEventRefs, r.InputEvent)
+		evt, err := inv.ResolveEvent(r.InputEvent)
+		if err != nil {
+			return nil, fmt.Errorf("input event %q: %w", r.InputEvent, err)
+		}
+		if evt == nil {
+			return nil, fmt.Errorf("input event: %s not found", r.InputEvent)
+		}
+		inputEvents = append(inputEvents, artifacts.AsGeneratedEvent(*evt))
 
-	inp, err := generateBackboneInput(applicationId, inputEvents)
+		uniqueOutputEvents := make(map[commons.Reference]struct{})
+		for _, outEvt := range r.OutputEventCodes {
+			uniqueOutputEvents[r.Concept.Child("events", outEvt)] = struct{}{}
+		}
+		for oe, _ := range uniqueOutputEvents {
+			evt, err := inv.ResolveEvent(oe)
+			if err != nil {
+				return nil, fmt.Errorf("output event: %w", err)
+			}
+			if evt == nil {
+				return nil, fmt.Errorf("output event: %s not found", outputEvents)
+			}
+			outputEvents = append(outputEvents, artifacts.AsGeneratedEvent(*evt))
+		}
+	}
+	opts = append(opts,
+		artifacts.WithInputEvents(inputEvents...),
+		artifacts.WithOutputEvents(outputEvents...))
+
+	inp, err := generateBackboneInput(applicationId, inputEventRefs)
 	if err != nil {
 		return nil, fmt.Errorf("input: %w", err)
 	}
+	opts = append(opts, artifacts.WithInput(*inp))
 
 	logic, err := generateWrapperLogic(reactors)
 	if err != nil {
 		return nil, fmt.Errorf("logic: %w", err)
 	}
+	l, err := generateLogic(logic)
+	if err != nil {
+		return nil, fmt.Errorf("logic: %w", err)
+	}
+	opts = append(opts, artifacts.WithLogic(*l))
 
 	out, err := generateBackboneOutput()
 	if err != nil {
 		return nil, fmt.Errorf("output: %w", err)
 	}
+	opts = append(opts, artifacts.WithOutput(*out))
 
 	dlq, err := generateBackboneDLQ()
 	if err != nil {
 		return nil, fmt.Errorf("dlq: %w", err)
 	}
+	opts = append(opts, artifacts.WithDlq(*dlq))
 
-	l, err := generateLogic(logic)
-	if err != nil {
-		return nil, fmt.Errorf("logic: %w", err)
-	}
-
-	return NewArtifact(conceptRef, commons.ArtifactTypeConcept, *l, *inp, out, dlq, WithConcept(concept), WithKey(artifactId))
+	return artifacts.NewArtifact(commons.ArtifactTypeConcept, conceptRef, fmt.Sprintf("%s_%s", applicationId, artifactId), opts...)
 }
 
 func generateWrapperLogic(reactors []inventory.Reactor) (inventory.Logic, error) {

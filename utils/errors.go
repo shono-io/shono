@@ -109,6 +109,6 @@ func (e *TechnicalError) Error() string {
 //	err error
 //}
 //
-//func (e *PoisonPillError) Error() string {
-//	return fmt.Sprintf("[POISON PILL] %s", e.err.Error())
+//func (e *PoisonPillError) DLQ() string {
+//	return fmt.Sprintf("[POISON PILL] %s", e.err.DLQ())
 //}

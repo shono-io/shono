@@ -18,13 +18,13 @@ type RunConfig struct {
 	StorageSystemId string `json:"storage" yaml:"storage"`
 }
 
-func configForArtifact(cfg RunConfig, systems SystemConfigs, artifact artifacts.Artifact, loglevel string) ([]byte, error) {
+func configForArtifact(cfg RunConfig, systems SystemConfigs, artifact *artifacts.Artifact, loglevel string) ([]byte, error) {
 	if artifact == nil {
 		return nil, fmt.Errorf("no artifact provided")
 	}
 
 	// -- configure the artifact input
-	inp := artifact.Input()
+	inp := artifact.Input
 	inpSystem, err := systems.Resolve(inp.Id)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func configForArtifact(cfg RunConfig, systems SystemConfigs, artifact artifacts.
 	}
 
 	// -- configure the artifact output
-	out := artifact.Output()
+	out := artifact.Output
 	outSystem, err := systems.Resolve(out.Id)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func configForArtifact(cfg RunConfig, systems SystemConfigs, artifact artifacts.
 	}
 
 	// -- configure the artifact dlq
-	dlq := artifact.Error()
+	dlq := artifact.DLQ
 	dlqSystem, err := systems.Resolve(dlq.Id)
 	if err != nil {
 		return nil, err
@@ -57,16 +57,16 @@ func configForArtifact(cfg RunConfig, systems SystemConfigs, artifact artifacts.
 	return GenerateBenthosConfig(artifact, loglevel)
 }
 
-func RunArtifact(cfg RunConfig, systems SystemConfigs, artifact artifacts.Artifact, loglevel string) error {
+func RunArtifact(cfg RunConfig, systems SystemConfigs, artifact *artifacts.Artifact, loglevel string) error {
 	ll, err := logrus.ParseLevel(loglevel)
 	if err != nil {
 		return fmt.Errorf("invalid log level %q: %w", loglevel, err)
 	}
 	logrus.SetLevel(ll)
 
-	if artifact.Concept() != nil {
+	if artifact.Concept != nil {
 		// -- a concept might have a store associated with it
-		if artifact.Concept().Stored {
+		if artifact.Concept.Stored {
 			// -- find the storage system
 			storageSystem, ok := systems[cfg.StorageSystemId]
 			if !ok {
@@ -87,7 +87,7 @@ func RunArtifact(cfg RunConfig, systems SystemConfigs, artifact artifacts.Artifa
 		return fmt.Errorf("failed to write the artifact to temporary file %q: %w", tmpFile, err)
 	}
 
-	logrus.Infof("Running artifact %q from %q", artifact.Key(), tmpFile)
+	logrus.Infof("Running artifact %q from %q", artifact.Ref, tmpFile)
 	servicetest.RunCLIWithArgs(context.Background(), "benthos", "-c", tmpFile, "--log.level", loglevel)
 
 	//sb := service.NewStreamBuilder()
@@ -106,7 +106,7 @@ func RunArtifact(cfg RunConfig, systems SystemConfigs, artifact artifacts.Artifa
 	return nil
 }
 
-func TestArtifact(artifact artifacts.Artifact, loglevel string) error {
+func TestArtifact(artifact *artifacts.Artifact, loglevel string) error {
 	// -- register the store
 	storage.Register("memory", map[string]any{}, true)
 

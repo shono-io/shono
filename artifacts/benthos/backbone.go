@@ -3,7 +3,6 @@ package benthos
 import (
 	"github.com/shono-io/shono/artifacts"
 	"github.com/shono-io/shono/commons"
-	"github.com/shono-io/shono/inventory"
 	"github.com/shono-io/shono/system/kafka"
 )
 
@@ -34,28 +33,29 @@ func generateBackboneInput(consumerGroup string, eventRefs []commons.Reference) 
 	}
 
 	return &artifacts.GeneratedInput{
-		Id:         inp.Id,
-		Kind:       inp.Kind,
-		ConfigSpec: inp.ConfigSpec,
-		Config:     inp.Config,
-		Logic:      inpLogic,
+		Id:     inp.Id,
+		Kind:   inp.Kind,
+		Config: inp.Config,
+		Logic:  inpLogic,
 	}, nil
 }
 
-func generateBackboneDLQ() (inventory.Output, error) {
-	out := kafka.NewOutput(
+func generateBackboneDLQ() (*artifacts.GeneratedOutput, error) {
+	out := artifacts.AsGeneratedOutput(kafka.NewOutput(
 		"backbone",
 		kafka.WithOutputTopic("shono.dlq"),
-	)
-	return out, nil
+	))
+
+	return &out, nil
 }
 
-func generateBackboneOutput() (inventory.Output, error) {
-	out := kafka.NewOutput(
+func generateBackboneOutput() (*artifacts.GeneratedOutput, error) {
+	out := artifacts.AsGeneratedOutput(kafka.NewOutput(
 		"backbone",
 		kafka.WithOutputTopic("${! @shono_backbone_topic }"),
-	)
-	return out, nil
+	))
+
+	return &out, nil
 }
 
 func topicName(eventRef commons.Reference) string {
