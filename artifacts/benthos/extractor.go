@@ -69,5 +69,5 @@ func (e *ExtractorGenerator) Generate(applicationId string, artifactId string, i
 	}
 	opts = append(opts, artifacts.WithLogic(*logic))
 
-	return artifacts.NewArtifact(commons.ArtifactTypeExtractor, extractor.Reference().Parent(), fmt.Sprintf("%s_%s", applicationId, artifactId), opts...)
+	return artifacts.NewArtifact(commons.ArtifactTypeExtractor, extractor.Reference().Parent(), artifactId, opts...)
 }
