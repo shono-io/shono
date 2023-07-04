@@ -86,3 +86,31 @@ func (e *Inventory) ListExtractorsForScope(scopeRef commons.Reference) ([]invent
 	}
 	return res, nil
 }
+
+func (e *Inventory) ListScopes() ([]inventory.Scope, error) {
+	var res []inventory.Scope
+	for _, v := range e.scopes {
+		res = append(res, *v)
+	}
+	return res, nil
+}
+
+func (e *Inventory) ListConceptsForScope(scopeRef commons.Reference) ([]inventory.Concept, error) {
+	var res []inventory.Concept
+	for _, v := range e.concepts {
+		if v.Scope.String() == scopeRef.String() {
+			res = append(res, *v)
+		}
+	}
+	return res, nil
+}
+
+func (e *Inventory) ListEventsForConcept(conceptRef commons.Reference) ([]inventory.Event, error) {
+	var res []inventory.Event
+	for _, v := range e.events {
+		if v.Concept.String() == conceptRef.String() {
+			res = append(res, *v)
+		}
+	}
+	return res, nil
+}

@@ -1,5 +1,7 @@
 package commons
 
+import "fmt"
+
 type ArtifactType string
 
 var (
@@ -18,3 +20,18 @@ var (
 	StatusExperimental Status = "experimental"
 	StatusDeprecated   Status = "deprecated"
 )
+
+func StatusOf(s string) (Status, error) {
+	switch s {
+	case "stable":
+		return StatusStable, nil
+	case "beta":
+		return StatusBeta, nil
+	case "experimental":
+		return StatusExperimental, nil
+	case "deprecated":
+		return StatusDeprecated, nil
+	default:
+		return "", fmt.Errorf("invalid status: %s", s)
+	}
+}

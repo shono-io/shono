@@ -1,0 +1,7 @@
+event:
+  scope: my_scope
+  concept: my_concept
+  code: my_event
+  status: experimental
+  summary: my_summary
+  docs: A simple event

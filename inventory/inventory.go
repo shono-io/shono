@@ -14,6 +14,10 @@ type Inventory interface {
 	ListInjectorsForScope(scopeRef commons.Reference) ([]Injector, error)
 	ListReactorsForConcept(conceptRef commons.Reference) ([]Reactor, error)
 	ListExtractorsForScope(scopeRef commons.Reference) ([]Extractor, error)
+
+	ListScopes() ([]Scope, error)
+	ListConceptsForScope(scopeRef commons.Reference) ([]Concept, error)
+	ListEventsForConcept(conceptRef commons.Reference) ([]Event, error)
 }
 
 type Executable interface {
