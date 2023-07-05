@@ -1,6 +1,7 @@
 package decl
 
 import (
+	"fmt"
 	"github.com/shono-io/shono/commons"
 	"github.com/shono-io/shono/inventory"
 	"github.com/shono-io/shono/local"
@@ -72,6 +73,38 @@ func (h *handler) OnEvent(event *EventSpec) error {
 		Build()
 
 	h.inv.Event(res)
+
+	return nil
+}
+
+func (h *handler) OnReactor(reactor *ReactorSpec) error {
+	if reactor.Status == "" {
+		reactor.Status = "experimental"
+	}
+
+	status, err := commons.StatusOf(reactor.Status)
+	if err != nil {
+		return err
+	}
+
+	conceptRef := inventory.NewConceptReference(reactor.Concept.Scope, reactor.Concept.Code)
+
+	var steps []inventory.LogicStep
+	for _, step := range reactor.Logic {
+		steps = append(steps, step.AsLogicStep(conceptRef))
+	}
+
+	lb := inventory.NewLogic().Steps(steps...)
+
+	rb := inventory.NewReactor(reactor.Concept.Scope, reactor.Concept.Code, fmt.Sprintf("on_%s_%s_%s", reactor.InputEvent.Scope, reactor.InputEvent.Concept, reactor.InputEvent.Code)).
+		Summary(reactor.Summary).
+		Status(status).
+		Docs(reactor.Docs).
+		InputEvent(inventory.NewEventReference(reactor.InputEvent.Scope, reactor.InputEvent.Concept, reactor.InputEvent.Code)).
+		OutputEventCodes(reactor.OutputEventCodes()...).
+		Logic(lb)
+
+	h.inv.Reactor(rb.Build())
 
 	return nil
 }

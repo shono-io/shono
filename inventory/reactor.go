@@ -17,5 +17,5 @@ type Reactor struct {
 }
 
 func (r *Reactor) Reference() commons.Reference {
-	return NewReactorReference(r.Concept.Parent().Parent().Code(), r.Concept.Parent().Code(), r.Code)
+	return NewReactorReference(r.Concept.Parent().Code(), r.Concept.Code(), r.Code)
 }

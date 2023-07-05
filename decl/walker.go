@@ -11,6 +11,7 @@ type Handler interface {
 	OnScope(scope *ScopeSpec) error
 	OnConcept(concept *ConceptSpec) error
 	OnEvent(event *EventSpec) error
+	OnReactor(reactor *ReactorSpec) error
 }
 
 func Walk(path string, h Handler) error {
@@ -81,6 +82,12 @@ func walkFile(path string, h Handler) error {
 
 	if spec.Event != nil {
 		if err := h.OnEvent(spec.Event); err != nil {
+			return err
+		}
+	}
+
+	if spec.Reactor != nil {
+		if err := h.OnReactor(spec.Reactor); err != nil {
 			return err
 		}
 	}

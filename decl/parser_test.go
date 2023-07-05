@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Testparser(t *testing.T) {
+func TestParser(t *testing.T) {
 	t.Run("should parse full scope", shouldParseFullScope)
 	t.Run("should parse partial scope", shouldParsePartialScope)
 	t.Run("should fail to parse scope with missing code", shouldFailToParseScopeWithMissingCode)
@@ -23,6 +23,8 @@ func Testparser(t *testing.T) {
 	t.Run("should fail to parse event with missing concept", shouldFailToParseEventWithMissingConcept)
 	t.Run("should fail to parse event with missing code", shouldFailToParseEventWithMissingCode)
 	t.Run("should fail to parse event with missing summary", shouldFailToParseEventWithMissingSummary)
+
+	t.Run("should parse full reactor", shouldParseReactor)
 }
 
 func shouldParseFullScope(t *testing.T) {
@@ -245,4 +247,51 @@ event:
 	res, err := (&parser{}).Parse(content)
 	assert.Error(t, err)
 	assert.Nil(t, res)
+}
+
+func shouldParseReactor(t *testing.T) {
+	content := []byte(`
+reactor:
+  summary: Create a task when a creation_requested event is received
+  for:
+    scope: todo
+    code: task
+  when:
+    scope: todo
+    concept: task
+    code: creation_requested
+  then:
+    - log:
+        message: "On Event Reactor"
+    - addToStore:
+        concept:
+          scope: todo
+          code: task
+        key: task_key
+    - asSuccessEvent:
+        event: created
+        code: 201
+    - catch:
+        - log:
+            message: "On Event Reactor failed"
+        - asFailureEvent:
+            event: operation_failed
+            code: 500
+            reason: "On Event Reactor failed"
+
+`)
+	res, err := (&parser{}).Parse(content)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	reactor := res.Reactor
+	assert.Equal(t, "Create a task when a creation_requested event is received", reactor.Summary)
+	assert.Equal(t, ConceptRef{"todo", "task"}, reactor.Concept)
+	assert.Equal(t, EventRef{"todo", "task", "creation_requested"}, reactor.InputEvent)
+
+	outputCodes := reactor.OutputEventCodes()
+	assert.Equal(t, 2, len(outputCodes))
+	assert.Contains(t, outputCodes, "operation_failed")
+	assert.Contains(t, outputCodes, "created")
+
 }

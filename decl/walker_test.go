@@ -23,12 +23,16 @@ func shouldTriggerHandlerForSpecs(t *testing.T) {
 
 	assert.NotNil(t, h.event)
 	assert.NoError(t, h.event.Validate())
+
+	assert.NotNil(t, h.reactor)
 }
 
 type memHandler struct {
 	scope   *ScopeSpec
 	concept *ConceptSpec
 	event   *EventSpec
+
+	reactor *ReactorSpec
 }
 
 func (m *memHandler) OnScope(scope *ScopeSpec) error {
@@ -43,5 +47,10 @@ func (m *memHandler) OnConcept(concept *ConceptSpec) error {
 
 func (m *memHandler) OnEvent(event *EventSpec) error {
 	m.event = event
+	return nil
+}
+
+func (m *memHandler) OnReactor(reactor *ReactorSpec) error {
+	m.reactor = reactor
 	return nil
 }

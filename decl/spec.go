@@ -6,6 +6,8 @@ type Spec struct {
 	Scope   *ScopeSpec   `yaml:"scope,omitempty"`
 	Concept *ConceptSpec `yaml:"concept,omitempty"`
 	Event   *EventSpec   `yaml:"event,omitempty"`
+
+	Reactor *ReactorSpec `yaml:"reactor,omitempty"`
 }
 
 type ScopeSpec struct {
@@ -109,4 +111,54 @@ func applyEventDefaults(event *EventSpec) {
 	if event.Status == "" {
 		event.Status = "experimental"
 	}
+}
+
+type ReactorSpec struct {
+	Summary string `yaml:"summary"`
+	Status  string `yaml:"status,omitempty"`
+	Docs    string `yaml:"docs,omitempty"`
+
+	Concept    ConceptRef `yaml:"for"`
+	InputEvent EventRef   `yaml:"when"`
+	Logic      []StepSpec `yaml:"then"`
+
+	Tests []TestSpec `yaml:"tests,omitempty"`
+}
+
+func (r *ReactorSpec) OutputEventCodes() []string {
+	var res []string
+	err := walkLogic(r.Logic, func(step StepSpec) error {
+		if step.AsSuccessEvent != nil {
+			res = append(res, step.AsSuccessEvent.EventCode)
+		}
+		if step.AsFailureEvent != nil {
+			res = append(res, step.AsFailureEvent.EventCode)
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return res
+}
+
+type TestSpec struct {
+}
+
+func walkLogic(steps []StepSpec, f func(step StepSpec) error) error {
+	for _, step := range steps {
+		if err := f(step); err != nil {
+			return err
+		}
+
+		if step.Children() != nil {
+			if err := walkLogic(step.Children(), f); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

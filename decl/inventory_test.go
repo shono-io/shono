@@ -27,4 +27,8 @@ func shouldCreateNewInventoryBasedOnDirectoryContents(t *testing.T) {
 	events, err := inv.ListEventsForConcept(concepts[0].Reference())
 	assert.NoError(t, err)
 	assert.Len(t, events, 1)
+
+	reactors, err := inv.ListReactorsForConcept(concepts[0].Reference())
+	assert.NoError(t, err)
+	assert.Len(t, reactors, 1)
 }
