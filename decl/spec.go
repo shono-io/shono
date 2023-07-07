@@ -144,9 +144,6 @@ func (r *ReactorSpec) OutputEventCodes() []string {
 	return res
 }
 
-type TestSpec struct {
-}
-
 func walkLogic(steps []StepSpec, f func(step StepSpec) error) error {
 	for _, step := range steps {
 		if err := f(step); err != nil {
