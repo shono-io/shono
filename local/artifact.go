@@ -50,11 +50,27 @@ func (a *ArtifactDumper) StoreArtifact(artifact *artifacts.Artifact) error {
 	filename := referenceToFsName(artifact.Ref)
 
 	// -- create and write the file
-	return gos.WriteFile(filename, b, 0644)
+	f, err := gos.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	bw, err := f.Write(b)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%d bytes written as %s\n", bw, filename)
+	return f.Sync()
 }
 
 func referenceToFsName(ref commons.Reference) string {
-	return fmt.Sprintf("%s.yaml", ref.Code())
+	return fmt.Sprintf("%s.artifact.yaml", ref.Code())
 }
 
 func encodeArtifact(artifact *artifacts.Artifact) ([]byte, error) {
@@ -64,7 +80,7 @@ func encodeArtifact(artifact *artifacts.Artifact) ([]byte, error) {
 func decodeArtifact(b []byte) (*artifacts.Artifact, error) {
 	var result artifacts.Artifact
 	if err := yaml.Unmarshal(b, &result); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &result, nil

@@ -5,6 +5,7 @@ import (
 	"github.com/shono-io/shono/artifacts"
 	"github.com/shono-io/shono/dsl"
 	"github.com/shono-io/shono/inventory"
+	"gopkg.in/yaml.v3"
 	"strings"
 )
 
@@ -193,7 +194,7 @@ func generateTransformLogicStep(step dsl.TransformLogicStep) (map[string]any, er
 
 	switch step.Mapping.Language {
 	case "bloblang":
-		result["mapping"] = strings.TrimSpace(step.Mapping.Sourcecode)
+		result["mapping"] = &yaml.Node{Kind: yaml.ScalarNode, Style: yaml.FlowStyle, Value: step.Mapping.Sourcecode}
 	default:
 		return nil, fmt.Errorf("unknown mapping language: %s", step.Mapping.Language)
 	}

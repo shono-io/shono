@@ -6,6 +6,8 @@ import (
 )
 
 func BloblangMapping(sourcecode string) Mapping {
+	sourcecode = strings.TrimSpace(sourcecode)
+
 	// -- cleanup bloblang newlines by taking the first line and checking how much whitespace there is. Then remove
 	// -- that amount of whitespace from the beginning of each line.
 	lines := strings.Split(sourcecode, "\n")

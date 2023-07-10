@@ -52,7 +52,7 @@ func walkDir(path string, h Handler) error {
 }
 
 func walkFile(path string, h Handler) error {
-	if !strings.HasSuffix(path, ".yaml") {
+	if !strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".artifact.yaml") {
 		return nil
 	}
 
