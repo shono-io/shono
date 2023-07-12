@@ -25,6 +25,7 @@ func TestParser(t *testing.T) {
 	t.Run("should fail to parse event with missing summary", shouldFailToParseEventWithMissingSummary)
 
 	t.Run("should parse full reactor", shouldParseReactor)
+	t.Run("should parse reactor logic with fallback to benthos", shouldParseReactorLogicWithFallbackToBenthos)
 }
 
 func shouldParseFullScope(t *testing.T) {
@@ -294,4 +295,32 @@ reactor:
 	assert.Contains(t, outputCodes, "operation_failed")
 	assert.Contains(t, outputCodes, "created")
 
+}
+
+func shouldParseReactorLogicWithFallbackToBenthos(t *testing.T) {
+	content := []byte(`
+reactor:
+  summary: Create a task when a creation_requested event is received
+  for:
+    scope: todo
+    code: task
+  when:
+    scope: todo
+    concept: task
+    code: creation_requested
+  then:
+    - raw:
+        message: hello world
+`)
+	res, err := (&parser{}).Parse(content)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	reactor := res.Reactor
+	assert.Equal(t, "Create a task when a creation_requested event is received", reactor.Summary)
+	assert.Equal(t, ConceptRef{"todo", "task"}, reactor.Concept)
+	assert.Equal(t, EventRef{"todo", "task", "creation_requested"}, reactor.InputEvent)
+
+	assert.Equal(t, 1, len(reactor.Logic))
+	assert.NotNil(t, reactor.Logic[0].Raw)
 }

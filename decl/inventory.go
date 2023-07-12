@@ -89,13 +89,9 @@ func (h *handler) OnReactor(reactor *ReactorSpec) error {
 
 	conceptRef := inventory.NewConceptReference(reactor.Concept.Scope, reactor.Concept.Code)
 
-	var steps []inventory.LogicStep
+	var steps []inventory.StepBuilder
 	for idx, step := range reactor.Logic {
-		st, err := step.AsLogicStep(fmt.Sprintf("step[%d]", idx), conceptRef)
-		if err != nil {
-			return err
-		}
-
+		st := step.AsLogicStep(fmt.Sprintf("step[%d]", idx), conceptRef)
 		steps = append(steps, st)
 	}
 

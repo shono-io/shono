@@ -120,7 +120,7 @@ type ReactorSpec struct {
 
 	Concept    ConceptRef `yaml:"for"`
 	InputEvent EventRef   `yaml:"when"`
-	Logic      []StepSpec `yaml:"then"`
+	Logic      Steps      `yaml:"then"`
 
 	Tests []TestSpec `yaml:"tests,omitempty"`
 }

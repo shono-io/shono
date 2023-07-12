@@ -95,26 +95,25 @@ func (g *ConceptGenerator) Generate(applicationId string, artifactId string, inv
 
 func generateWrapperLogic(reactors []inventory.Reactor) (inventory.Logic, error) {
 	result := inventory.NewLogic()
-	var cases []dsl.ConditionalCase
+	sw := dsl.Switch()
+
 	for _, r := range reactors {
-		cases = append(cases, dsl.SwitchCase(
-			fmt.Sprintf("@shono_kind == %q", r.InputEvent.String()),
-			r.Logic.Steps()...))
+		sw.Case(fmt.Sprintf("@shono_kind == %q", r.InputEvent.String()), r.Logic.Steps()...)
 
 		// -- add the tests
 		result.Test(r.Logic.Tests()...)
 	}
 
 	// -- add a default case that logs unmatched event to trace
-	cases = append(cases, dsl.SwitchDefault(
-		dsl.Log("TRACE", "no processor for ${!meta(\"kind\")} with payload ${!this.format_json()}"),
-		dsl.Transform(dsl.BloblangMapping(`root = deleted()`)),
-	))
+	sw.Default(
+		dsl.Log("TRACE").Message("no processor for ${!meta(\"kind\")} with payload ${!this.format_json()}"),
+		dsl.Transform().Mapping(`root = deleted()`),
+	)
 
 	return result.
 		Steps(
-			dsl.Log("TRACE", "received ${!@} with payload ${!this.format_json()}"),
-			dsl.Switch(cases...),
+			dsl.Log("TRACE").Message("received ${!@} with payload ${!this.format_json()}"),
+			sw,
 		).
 		Build(), nil
 }

@@ -5,12 +5,16 @@ import (
 	"github.com/shono-io/shono/commons"
 	"github.com/shono-io/shono/dsl"
 	"github.com/shono-io/shono/inventory"
+	"github.com/sirupsen/logrus"
 )
+
+type Steps []StepSpec
 
 type StepSpec struct {
 	AddToStore      *AddToStoreStepSpec      `yaml:"addToStore,omitempty"`
 	AsSuccessEvent  *AsSuccessEventStepSpec  `yaml:"asSuccessEvent,omitempty"`
 	AsFailureEvent  *AsFailureEventStepSpec  `yaml:"asFailureEvent,omitempty"`
+	Branch          *BranchStepSpec          `yaml:"branch,omitempty"`
 	Catch           *CatchStepSpec           `yaml:"catch,omitempty"`
 	GetFromStore    *GetFromStoreStepSpec    `yaml:"getFromStore,omitempty"`
 	ListFromStore   *ListFromStoreStepSpec   `yaml:"listFromStore,omitempty"`
@@ -33,7 +37,7 @@ func (ss *StepSpec) Children() []StepSpec {
 	return nil
 }
 
-func (ss *StepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
+func (ss *StepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
 	if ss.AddToStore != nil {
 		return ss.AddToStore.AsLogicStep(fmt.Sprintf("%s/add_to_store", path), parent)
 	}
@@ -44,6 +48,10 @@ func (ss *StepSpec) AsLogicStep(path string, parent commons.Reference) (inventor
 
 	if ss.AsFailureEvent != nil {
 		return ss.AsFailureEvent.AsLogicStep(fmt.Sprintf("%s/as_failure_event", path), parent)
+	}
+
+	if ss.Branch != nil {
+		return ss.Branch.AsLogicStep(fmt.Sprintf("%s/branch", path), parent)
 	}
 
 	if ss.Catch != nil {
@@ -82,11 +90,26 @@ func (ss *StepSpec) AsLogicStep(path string, parent commons.Reference) (inventor
 		return ss.Transform.AsLogicStep(fmt.Sprintf("%s/transform", path), parent)
 	}
 
-	return nil, fmt.Errorf("unknown step spec at %s", path)
+	logrus.Panicf("unknown step type at %s", path)
+	return nil
 }
 
 type StepSpecWithChildren interface {
 	Children() []StepSpec
+}
+
+type BranchStepSpec struct {
+	Pre   string     `yaml:"pre"`
+	Post  string     `yaml:"post"`
+	Steps []StepSpec `yaml:"steps"`
+}
+
+func (s BranchStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	var st []inventory.StepBuilder
+	for idx, step := range s.Steps {
+		st = append(st, step.AsLogicStep(fmt.Sprintf("%s/steps[%d]", path, idx), parent))
+	}
+	return dsl.Branch().Pre(s.Pre).Post(s.Post).Steps(st...)
 }
 
 type AddToStoreStepSpec struct {
@@ -94,8 +117,8 @@ type AddToStoreStepSpec struct {
 	Key     string     `yaml:"key"`
 }
 
-func (a AddToStoreStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	return dsl.AddToStore(a.Concept.Scope, a.Concept.Code, a.Key), nil
+func (a AddToStoreStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	return dsl.AddToStore(a.Concept.Scope, a.Concept.Code, a.Key)
 }
 
 type AsSuccessEventStepSpec struct {
@@ -103,8 +126,8 @@ type AsSuccessEventStepSpec struct {
 	Status    int    `yaml:"status"`
 }
 
-func (s AsSuccessEventStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	return dsl.AsSuccessEvent(parent.Child("events", s.EventCode), s.Status, "this"), nil
+func (s AsSuccessEventStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	return dsl.AsSuccessEvent(parent.Child("events", s.EventCode), s.Status, "this")
 }
 
 type AsFailureEventStepSpec struct {
@@ -113,24 +136,21 @@ type AsFailureEventStepSpec struct {
 	Reason    string `yaml:"reason"`
 }
 
-func (s AsFailureEventStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	return dsl.AsFailedEvent(parent.Child("events", s.EventCode), s.ErrorCode, s.Reason), nil
+func (s AsFailureEventStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	return dsl.AsFailedEvent(parent.Child("events", s.EventCode), s.ErrorCode, s.Reason)
 }
 
 type CatchStepSpec []StepSpec
 
-func (c CatchStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	var steps []inventory.LogicStep
+func (c CatchStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	var steps []inventory.StepBuilder
 	for idx, step := range c {
-		st, err := step.AsLogicStep(fmt.Sprintf("%s/clause[%d]", path, idx), parent)
-		if err != nil {
-			return nil, err
-		}
+		st := step.AsLogicStep(fmt.Sprintf("%s/clause[%d]", path, idx), parent)
 
 		steps = append(steps, st)
 	}
 
-	return dsl.Catch(steps...), nil
+	return dsl.Catch().Steps(steps...)
 }
 
 func (c CatchStepSpec) Children() []StepSpec { return c }
@@ -140,8 +160,8 @@ type GetFromStoreStepSpec struct {
 	Key     string     `yaml:"key"`
 }
 
-func (g GetFromStoreStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	return dsl.GetFromStore(g.Concept.Scope, g.Concept.Code, g.Key), nil
+func (g GetFromStoreStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	return dsl.GetFromStore(g.Concept.Scope, g.Concept.Code, g.Key)
 }
 
 type ListFromStoreStepSpec struct {
@@ -149,12 +169,12 @@ type ListFromStoreStepSpec struct {
 	Filter  []Filter   `yaml:"filters,omitempty"`
 }
 
-func (l ListFromStoreStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
+func (l ListFromStoreStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
 	filters := map[string]string{}
 	for _, filter := range l.Filter {
 		filters[filter.Field] = filter.Value
 	}
-	return dsl.ListFromStore(l.Concept.Scope, l.Concept.Code, filters), nil
+	return dsl.ListFromStore(l.Concept.Scope, l.Concept.Code, filters)
 }
 
 type LogStepSpec struct {
@@ -162,14 +182,14 @@ type LogStepSpec struct {
 	Message string `yaml:"message"`
 }
 
-func (l LogStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	return dsl.Log(dsl.LogLevel(l.Level), l.Message), nil
+func (l LogStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	return dsl.Log(dsl.LogLevel(l.Level)).Message(l.Message)
 }
 
 type RawStepSpec map[string]any
 
-func (r RawStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	return dsl.Raw(r), nil
+func (r RawStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	return dsl.Raw().Content(r)
 }
 
 type RemoveFromStoreStepSpec struct {
@@ -177,8 +197,8 @@ type RemoveFromStoreStepSpec struct {
 	Key     string     `yaml:"key"`
 }
 
-func (r RemoveFromStoreStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	return dsl.RemoveFromStore(r.Concept.Scope, r.Concept.Code, r.Key), nil
+func (r RemoveFromStoreStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	return dsl.RemoveFromStore(r.Concept.Scope, r.Concept.Code, r.Key)
 }
 
 type SetInStoreStepSpec struct {
@@ -186,31 +206,29 @@ type SetInStoreStepSpec struct {
 	Key     string     `yaml:"key"`
 }
 
-func (s SetInStoreStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	return dsl.SetInStore(s.Concept.Scope, s.Concept.Code, s.Key), nil
+func (s SetInStoreStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	return dsl.SetInStore(s.Concept.Scope, s.Concept.Code, s.Key)
 }
 
 type SwitchStepSpec []SwitchCase
 
-func (s SwitchStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	cases := make([]dsl.ConditionalCase, 0, len(s))
-	for _, c := range s {
-		var steps []inventory.LogicStep
-		for idx, step := range c.Steps {
-			st, err := step.AsLogicStep(fmt.Sprintf("%s/case[%d]", path, idx), parent)
-			if err != nil {
-				return nil, err
-			}
+func (s SwitchStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	sw := dsl.Switch()
 
-			steps = append(steps, st)
+	for _, c := range s {
+		var steps []inventory.StepBuilder
+		for idx, step := range c.Steps {
+			steps = append(steps, step.AsLogicStep(fmt.Sprintf("%s/case[%d]", path, idx), parent))
 		}
 
-		cases = append(cases, dsl.ConditionalCase{
-			Check: c.Condition,
-			Steps: steps,
-		})
+		if c.Condition == "" {
+			sw.Default(steps...)
+		} else {
+			sw.Case(c.Condition, steps...)
+		}
 	}
-	return dsl.Switch(cases...), nil
+
+	return sw
 }
 
 func (s SwitchStepSpec) Children() []StepSpec {
@@ -223,8 +241,8 @@ func (s SwitchStepSpec) Children() []StepSpec {
 
 type TransformStepSpec string
 
-func (s TransformStepSpec) AsLogicStep(path string, parent commons.Reference) (inventory.LogicStep, error) {
-	return dsl.Transform(dsl.BloblangMapping(string(s))), nil
+func (s TransformStepSpec) AsLogicStep(path string, parent commons.Reference) inventory.StepBuilder {
+	return dsl.Transform().Mapping(string(s))
 }
 
 type SwitchCase struct {

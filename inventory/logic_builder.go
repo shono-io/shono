@@ -8,7 +8,7 @@ type LogicBuilder struct {
 	spec LogicSpec
 }
 
-func (b *LogicBuilder) Steps(steps ...LogicStep) *LogicBuilder {
+func (b *LogicBuilder) Steps(steps ...StepBuilder) *LogicBuilder {
 	b.spec.Steps = steps
 	return b
 }
