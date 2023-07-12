@@ -1,11 +1,10 @@
 package dsl
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
 
-func BloblangMapping(sourcecode string) Mapping {
+func CleanMultilineStringWhitespace(sourcecode string) string {
+	sourcecode = strings.TrimSpace(sourcecode)
+
 	// -- cleanup bloblang newlines by taking the first line and checking how much whitespace there is. Then remove
 	// -- that amount of whitespace from the beginning of each line.
 	lines := strings.Split(sourcecode, "\n")
@@ -34,25 +33,5 @@ func BloblangMapping(sourcecode string) Mapping {
 		sourcecode = strings.Join(lines, "\n")
 	}
 
-	return Mapping{
-		Language:   "bloblang",
-		Sourcecode: sourcecode,
-	}
-}
-
-type Mapping struct {
-	Language   string
-	Sourcecode string
-}
-
-func (m Mapping) Validate() error {
-	if m.Language == "" {
-		return fmt.Errorf("transform logic must have a language")
-	}
-
-	if m.Sourcecode == "" {
-		return fmt.Errorf("transform logic must have sourcecode")
-	}
-
-	return nil
+	return sourcecode
 }

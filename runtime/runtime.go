@@ -18,7 +18,7 @@ type RunConfig struct {
 	StorageSystemId string `json:"storage" yaml:"storage"`
 }
 
-func configForArtifact(cfg RunConfig, systems SystemConfigs, artifact *artifacts.Artifact, loglevel string) ([]byte, error) {
+func configForArtifact(systems SystemConfigs, artifact *artifacts.Artifact, loglevel string, debug bool) ([]byte, error) {
 	if artifact == nil {
 		return nil, fmt.Errorf("no artifact provided")
 	}
@@ -54,7 +54,7 @@ func configForArtifact(cfg RunConfig, systems SystemConfigs, artifact *artifacts
 	}
 
 	// -- generate the benthos configuration
-	return GenerateBenthosConfig(artifact, loglevel)
+	return GenerateBenthosConfig(artifact, loglevel, debug)
 }
 
 func RunArtifact(cfg RunConfig, systems SystemConfigs, artifact *artifacts.Artifact, loglevel string) error {
@@ -78,7 +78,7 @@ func RunArtifact(cfg RunConfig, systems SystemConfigs, artifact *artifacts.Artif
 	}
 
 	// -- generate the benthos configuration
-	benthosConfig, err := configForArtifact(cfg, systems, artifact, loglevel)
+	benthosConfig, err := configForArtifact(systems, artifact, loglevel, false)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func TestArtifact(artifact *artifacts.Artifact, loglevel string) error {
 	storage.Register("memory", map[string]any{}, true)
 
 	// -- generate the benthos configuration
-	benthosConfig, err := GenerateBenthosConfig(artifact, loglevel)
+	benthosConfig, err := GenerateBenthosConfig(artifact, loglevel, false)
 	if err != nil {
 		return err
 	}
@@ -122,5 +122,35 @@ func TestArtifact(artifact *artifacts.Artifact, loglevel string) error {
 	}
 
 	servicetest.RunCLIWithArgs(context.Background(), "benthos", "test", "--log", loglevel, tmpFile)
+	return nil
+}
+
+func DebugArtifact(artifact *artifacts.Artifact, loglevel string) error {
+	ll, err := logrus.ParseLevel(loglevel)
+	if err != nil {
+		return fmt.Errorf("invalid log level %q: %w", loglevel, err)
+	}
+	logrus.SetLevel(ll)
+
+	if artifact.Concept != nil {
+		// -- a concept might have a store associated with it
+		if artifact.Concept.Stored {
+			// -- create an in-memory mock storage system
+			storage.Register("memory", map[string]any{}, true)
+		}
+	}
+
+	// -- generate the benthos configuration
+	benthosConfig, err := GenerateBenthosConfig(artifact, loglevel, true)
+	if err != nil {
+		return err
+	}
+	tmpFile := fmt.Sprintf("%s/%s.yaml", os.TempDir(), xid.New().String())
+	if err := os.WriteFile(tmpFile, benthosConfig, 0644); err != nil {
+		return fmt.Errorf("failed to write the artifact to temporary file %q: %w", tmpFile, err)
+	}
+
+	logrus.Infof("Running artifact %q from %q", artifact.Ref, tmpFile)
+	servicetest.RunCLIWithArgs(context.Background(), "benthos", "-c", tmpFile, "--log.level", loglevel)
 	return nil
 }

@@ -1,0 +1,7 @@
+concept:
+  scope: my_scope
+  code: my_concept
+  summary: my_summary
+  status: experimental
+  docs: A simple concept
+  stored: true

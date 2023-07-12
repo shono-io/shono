@@ -20,18 +20,18 @@ func NewInput(id string, opts ...Opt) inventory.Input {
 		ConfigSpec: utils.GetBenthosInputConfig("kafka_franz"),
 		Config:     config,
 		Logic: inventory.NewLogic().Steps(
-			dsl.Log("TRACE", "RAW metadata ${!@} with payload ${! content() }"),
-			dsl.Transform(dsl.BloblangMapping(`
-				root = if content() == null || content().length() == 0 {
-					{}
-				} else {
-					this
-				}
-				meta shono_key = @kafka_key
-				meta shono_timestamp = @kafka_timestamp_unix
-				meta = @.filter(kv -> !kv.key.has_prefix("kafka_"))
-			`)),
-			dsl.Log("TRACE", "RAW postprocessed metadata ${!@} with payload ${! content() }"),
+			dsl.Log("TRACE").Message("RAW metadata ${!@} with payload ${! content() }"),
+			dsl.Transform().Mapping(`
+root = if content() == null || content().length() == 0 {
+	{}
+} else {
+	this
+}
+meta shono_key = @kafka_key
+meta shono_timestamp = @kafka_timestamp_unix
+meta = @.filter(kv -> !kv.key.has_prefix("kafka_"))
+			`),
+			dsl.Log("TRACE").Message("RAW postprocessed metadata ${!@} with payload ${! content() }"),
 		).Build(),
 	}
 }

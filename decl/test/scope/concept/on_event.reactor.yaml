@@ -1,0 +1,27 @@
+reactor:
+  summary: Create a task when a creation_requested event is received
+  for:
+    scope: my_scope
+    code: my_concept
+  when:
+    scope: todo
+    concept: task
+    code: creation_requested
+  then:
+    - log:
+        message: "On Event Reactor"
+    - addToStore:
+        concept:
+          scope: todo
+          code: task
+        key: task_key
+    - asSuccessEvent:
+        event: created
+        code: 201
+    - catch:
+        - log:
+            message: "On Event Reactor failed"
+        - asFailureEvent:
+            event: operation_failed
+            code: 500
+            reason: "On Event Reactor failed"

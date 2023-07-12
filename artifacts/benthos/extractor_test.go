@@ -18,7 +18,7 @@ func baseExtractor() *inventory.ExtractorBuilder {
 	return inventory.NewExtractor("test", "my_extractor").
 		InputEvent("test", "my_concept", "my_event").
 		Output(file.NewOutput("out_file", file.WithOutputPath("/tmp/out.txt"))).
-		Logic(inventory.NewLogic().Steps(dsl.Log("INFO", "my message")))
+		Logic(inventory.NewLogic().Steps(dsl.Log("INFO").Message("my message")))
 }
 
 func shouldGenerateAValidExtractorArtifact(t *testing.T) {

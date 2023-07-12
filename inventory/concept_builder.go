@@ -32,9 +32,13 @@ func (b *ConceptBuilder) Status(status commons.Status) *ConceptBuilder {
 	return b
 }
 
-func (b *ConceptBuilder) Stored() *ConceptBuilder {
-	b.concept.Stored = true
+func (b *ConceptBuilder) IsStored(stored bool) *ConceptBuilder {
+	b.concept.Stored = stored
 	return b
+}
+
+func (b *ConceptBuilder) Stored() *ConceptBuilder {
+	return b.IsStored(true)
 }
 
 func (b *ConceptBuilder) Build() *Concept {

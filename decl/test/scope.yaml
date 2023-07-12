@@ -1,0 +1,5 @@
+scope:
+  code: my_scope
+  status: experimental
+  summary: my_summary
+  docs: A simple scope
